@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Boiler Bathrooms · Purdue</title>
+<meta name="description" content="Rate and rank the bathrooms of Purdue University. Monthly leaderboard, no login.">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+/* =====================================================================
+   THEME TOKENS — swap colors / radii / durations here to re-skin.
+   ===================================================================== */
+:root {
+  --c-black: #000000;
+  --c-gold: #CFB991;
+  --c-gold-deep: #A8905F;
+  --c-gold-soft: #EFE7D3;
+  --c-paper: #F5F3EF;
+  --c-paper-deep: #EAE6DD;
+  --c-white: #FFFFFF;
+  --c-ink: #141414;
+  --c-muted: #6B6760;
+  --c-line: #E2DDD2;
+  --c-danger: #B4382E;
+  --c-danger-soft: #F8E4E1;
+  --c-ok: #2F7D4F;
+  --c-ok-soft: #E1F1E7;
+  --c-silver: #B9B9B9;
+  --c-bronze: #B08D57;
+
+  --r-s: 10px;
+  --r-m: 16px;
+  --r-l: 24px;
+  --r-pill: 999px;
+
+  --sh-soft: 0 6px 20px rgba(0,0,0,.08);
+  --sh-card: 0 1px 2px rgba(0,0,0,.04), 0 10px 24px rgba(0,0,0,.07);
+  --sh-lift: 0 14px 32px rgba(0,0,0,.14);
+
+  --d-fast: 160ms;
+  --d-med: 260ms;
+  --d-slow: 400ms;
+  --e-spring: cubic-bezier(.34, 1.45, .4, 1);
+  --e-out: cubic-bezier(.2, .7, .2, 1);
+
+  --map-tilt: 14deg;
+  --map-perspective: 1400px;
+  --header-h: 56px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ===================================================================== BASE */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; min-height: 100%; }
+body { font-family: var(--font); background: var(--c-paper); color: var(--c-ink); -webkit-font-smoothing: antialiased; overflow: hidden; display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+#app { flex: 1; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; }
+a { color: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
+img { max-width: 100%; display: block; }
+h1, h2, h3 { margin: 0; letter-spacing: -.02em; line-height: 1.1; }
+h1 { font-size: clamp(26px, 5vw, 36px); font-weight: 800; }
+h2 { font-size: 20px; font-weight: 800; }
+p { margin: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes pop { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes indeterminate { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+
+/* ===================================================================== TOPBAR */
+.topbar { flex: none; z-index: 50; height: var(--header-h); display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 14px; background: var(--c-black); color: var(--c-gold); }
+.brand { display: flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 800; font-size: 17px; letter-spacing: -.01em; min-width: 0; }
+.brand-mark { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--c-gold); color: var(--c-black); font-size: 15px; font-weight: 900; }
+.brand-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav { display: flex; gap: 2px; }
+.nav a { padding: 7px 11px; border-radius: var(--r-pill); text-decoration: none; font-weight: 600; font-size: 13px; color: var(--c-gold); opacity: .75; transition: background var(--d-fast), color var(--d-fast), opacity var(--d-fast); }
+.nav a:hover { opacity: 1; }
+.nav a.active { background: var(--c-gold); color: var(--c-black); opacity: 1; }
+.banner { flex: none; padding: 8px 14px; font-size: 13px; font-weight: 600; text-align: center; line-height: 1.5; }
+.banner-offline { background: var(--c-danger); color: #fff; }
+.banner-demo { background: var(--c-gold-soft); color: var(--c-ink); border-bottom: 1px solid var(--c-line); }
+.banner-demo code { font-size: 12px; background: rgba(0,0,0,.06); padding: 1px 5px; border-radius: 4px; }
+
+/* ===================================================================== SHARED */
+.view { max-width: 960px; margin: 0 auto; padding: 18px 16px 56px; animation: rise var(--d-slow) var(--e-out) both; }
+.view-narrow { max-width: 720px; }
+.view-form { max-width: 560px; }
+.back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--c-muted); text-decoration: none; margin-bottom: 14px; }
+.back:hover { color: var(--c-ink); }
+.view-head { margin-bottom: 20px; }
+.sub { color: var(--c-muted); margin-top: 6px; font-size: 15px; }
+.crumb { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--c-gold-deep); margin-bottom: 6px; }
+.card { background: var(--c-white); border-radius: var(--r-m); box-shadow: var(--sh-card); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border-radius: var(--r-pill); border: 0; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; transition: transform var(--d-fast) var(--e-spring), box-shadow var(--d-fast), opacity var(--d-fast); }
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .55; cursor: default; transform: none; }
+.btn-primary { background: var(--c-black); color: var(--c-gold); }
+.btn-primary:hover { box-shadow: var(--sh-soft); }
+.btn-gold { background: var(--c-gold); color: var(--c-black); }
+.btn-ghost { background: transparent; border: 1.5px solid var(--c-line); color: var(--c-ink); padding: 9px 14px; font-size: 14px; }
+.btn-ghost:hover { border-color: var(--c-ink); }
+.btn-block { width: 100%; }
+.icon-btn { width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--c-paper); color: var(--c-ink); font-size: 20px; line-height: 1; cursor: pointer; display: grid; place-items: center; }
+.icon-btn:hover { background: var(--c-line); }
+.skel { background: linear-gradient(90deg, var(--c-paper-deep) 25%, #f4f1eb 50%, var(--c-paper-deep) 75%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; border-radius: var(--r-s); }
+.skel-row { height: 64px; margin-bottom: 10px; border-radius: var(--r-m); }
+.empty { text-align: center; padding: 44px 20px; color: var(--c-muted); border: 1.5px dashed var(--c-line); border-radius: var(--r-m); }
+.empty b { display: block; color: var(--c-ink); font-size: 17px; margin-bottom: 6px; }
+.error-box { background: var(--c-danger-soft); color: var(--c-danger); border-radius: var(--r-m); padding: 18px; display: grid; gap: 10px; justify-items: start; }
+.error-box b { font-size: 16px; }
+.notice { background: var(--c-gold-soft); border-radius: var(--r-m); padding: 14px 16px; font-size: 14px; line-height: 1.45; }
+.notice-ok { background: var(--c-ok-soft); color: var(--c-ok); }
+.stars-static { color: var(--c-gold); letter-spacing: 1px; font-size: 14px; white-space: nowrap; }
+.stars-static .off { color: var(--c-line); }
+.pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: var(--r-pill); font-size: 12px; font-weight: 700; background: var(--c-paper); color: var(--c-muted); }
+.pill-gold { background: var(--c-gold-soft); color: var(--c-gold-deep); }
+
+/* ===================================================================== FORMS */
+.field { display: block; margin-bottom: 16px; }
+.field-label { display: flex; justify-content: space-between; align-items: baseline; font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+.field-label em { font-style: normal; font-weight: 500; color: var(--c-muted); font-size: 12px; }
+.field-help { display: block; font-size: 12px; color: var(--c-muted); margin-top: 6px; line-height: 1.4; }
+.input, .field input[type="text"], .field input[type="email"], .field textarea, .field select { width: 100%; padding: 12px 14px; border-radius: var(--r-s); border: 1.5px solid var(--c-line); background: var(--c-white); outline: none; transition: border-color var(--d-fast), box-shadow var(--d-fast); }
+.field input:focus, .field textarea:focus, .field select:focus { border-color: var(--c-black); box-shadow: 0 0 0 3px var(--c-gold-soft); }
+.field textarea { resize: vertical; min-height: 84px; line-height: 1.45; }
+.counter { display: block; text-align: right; font-size: 12px; color: var(--c-muted); margin-top: 4px; }
+.counter.near { color: var(--c-danger); }
+.form-error { color: var(--c-danger); background: var(--c-danger-soft); padding: 10px 12px; border-radius: var(--r-s); font-size: 14px; margin-bottom: 14px; }
+.stars { border: 0; padding: 0; margin: 0 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.stars legend { float: left; font-weight: 700; font-size: 15px; }
+.stars-hint { display: block; font-size: 12px; color: var(--c-muted); font-weight: 500; }
+.star-row { display: flex; gap: 2px; }
+.star-row label { cursor: pointer; font-size: 30px; line-height: 1; color: var(--c-line); transition: color var(--d-fast), transform var(--d-fast) var(--e-spring); padding: 2px; user-select: none; }
+.star-row label:hover { transform: scale(1.15); }
+.star-row label.on { color: var(--c-gold); }
+.star-row label:has(input:focus-visible) { outline: 2px solid var(--c-black); border-radius: 6px; }
+.star-row input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.photo-field { margin-bottom: 16px; }
+.photo-drop { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.photo-note { font-size: 12px; color: var(--c-muted); }
+.photo-preview { position: relative; margin-top: 10px; width: 140px; }
+.photo-preview img { width: 140px; height: 140px; object-fit: cover; border-radius: var(--r-s); box-shadow: var(--sh-card); }
+.photo-preview .icon-btn { position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; font-size: 16px; background: var(--c-black); color: var(--c-gold); }
+.photo-status { margin-top: 10px; font-size: 13px; color: var(--c-muted); display: grid; gap: 6px; }
+.progress { height: 6px; border-radius: var(--r-pill); background: var(--c-gold-soft); overflow: hidden; position: relative; }
+.progress i { position: absolute; left: 0; top: 0; bottom: 0; width: 40%; background: var(--c-gold); border-radius: var(--r-pill); animation: indeterminate 1.1s var(--e-out) infinite; }
+.progress.done i { animation: none; width: 100%; background: var(--c-ok); }
+
+/* ===================================================================== MAP VIEW */
+.map-view { position: relative; height: 100%; overflow: hidden; background: radial-gradient(120% 90% at 50% 0%, #F1EDE3 0%, var(--c-paper-deep) 70%); }
+/* perspective on the viewport + rotateX on the child gives the 2.5D table look.
+   The tilt element is exactly the viewport size so its transform-origin (its center)
+   coincides with the perspective origin — that's what makes the inverse math in
+   screenToPlane() tractable. */
+.map-viewport { position: absolute; inset: 0; overflow: hidden; touch-action: none; perspective: var(--map-perspective); cursor: grab; user-select: none; -webkit-user-select: none; }
+.map-viewport.dragging { cursor: grabbing; }
+.map-tilt { position: absolute; inset: 0; transform: rotateX(var(--map-tilt)); transform-style: preserve-3d; }
+.map-pan { position: absolute; left: 0; top: 0; transform-origin: 0 0; transform-style: preserve-3d; will-change: transform; }
+.map-img { width: 100%; height: 100%; pointer-events: none; border-radius: 6px; box-shadow: 0 30px 70px rgba(0,0,0,.28), 0 2px 0 rgba(0,0,0,.2); background: #fff; }
+.map-pins { position: absolute; inset: 0; transform-style: preserve-3d; }
+.pin { position: absolute; width: 0; height: 0; transform-style: preserve-3d; }
+/* flat ellipse lying on the map surface under each pin */
+.pin::before { content: ""; position: absolute; left: 0; top: 0; width: 26px; height: 9px; border-radius: 50%; background: rgba(0,0,0,.28); filter: blur(2px); transform: translate(-50%, -50%) scale(var(--pin-k, 1)); }
+/* counter-rotate by the tilt so the pin stands upright off the tilted plane;
+   scale(1/zoom) keeps pins the same screen size while the map zooms. */
+.pin-body { position: absolute; left: 0; bottom: 7px; transform-origin: 50% calc(100% + 7px); transform: translateX(-50%) rotateX(calc(var(--map-tilt) * -1)) scale(var(--pin-k, 1)); display: flex; align-items: center; gap: 6px; padding: 6px 10px 6px 9px; background: var(--c-black); color: var(--c-gold); border-radius: 12px; white-space: nowrap; filter: drop-shadow(0 6px 5px rgba(0,0,0,.35)); cursor: pointer; border: 1.5px solid rgba(207,185,145,.55); transition: background var(--d-fast), color var(--d-fast); }
+.pin-body::after { content: ""; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 7px solid transparent; border-top: 8px solid var(--c-black); border-bottom: 0; }
+.pin-body:hover, .pin-body:focus-visible, .pin.dev-current .pin-body { background: var(--c-gold); color: var(--c-black); outline: none; }
+.pin-body:hover::after, .pin.dev-current .pin-body::after { border-top-color: var(--c-gold); }
+.pin-code { font-weight: 800; font-size: 12px; letter-spacing: .02em; }
+.pin-score { font-weight: 700; font-size: 11px; color: var(--c-white); display: inline-flex; align-items: center; gap: 2px; }
+.pin-body:hover .pin-score, .pin.dev-current .pin-score { color: var(--c-black); }
+.pin-score.none { color: rgba(255,255,255,.55); font-weight: 600; }
+.pin-body:hover .pin-score.none { color: rgba(0,0,0,.55); }
+.pin-name { position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%) translateY(4px); background: var(--c-white); color: var(--c-ink); font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 8px; box-shadow: var(--sh-card); opacity: 0; pointer-events: none; transition: opacity var(--d-fast), transform var(--d-fast) var(--e-spring); }
+.pin-body:hover .pin-name { opacity: 1; transform: translateX(-50%) translateY(0); }
+.map-skeleton { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.map-skel-plate { width: min(78vw, 520px); aspect-ratio: 1 / 1.05; border-radius: 10px; transform: perspective(1400px) rotateX(var(--map-tilt)); position: relative; overflow: hidden; }
+.map-skel-plate i { position: absolute; background: rgba(0,0,0,.07); border-radius: 4px; }
+.map-skeleton p { position: absolute; bottom: 18%; font-size: 13px; font-weight: 600; color: var(--c-muted); }
+.map-fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; overflow: auto; }
+.map-fallback .card { padding: 22px; max-width: 480px; width: 100%; display: grid; gap: 12px; }
+.fallback-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 4px; }
+.fallback-list a { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-s); background: var(--c-paper); text-decoration: none; font-size: 13px; }
+.fallback-list a b { font-size: 14px; }
+.map-hud { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; pointer-events: none; }
+.map-hint { pointer-events: auto; background: rgba(0,0,0,.82); color: var(--c-gold); font-size: 12px; font-weight: 600; padding: 8px 12px; border-radius: var(--r-pill); backdrop-filter: blur(6px); max-width: 60vw; animation: rise var(--d-slow) var(--e-out) both; }
+.map-zoom { pointer-events: auto; display: flex; flex-direction: column; gap: 6px; }
+.map-zoom button { width: 40px; height: 40px; border-radius: 12px; border: 0; background: var(--c-white); box-shadow: var(--sh-card); font-size: 20px; font-weight: 700; cursor: pointer; transition: transform var(--d-fast) var(--e-spring); }
+.map-zoom button:active { transform: scale(.92); }
+.map-status { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); max-width: min(92vw, 520px); background: var(--c-white); border-radius: var(--r-m); box-shadow: var(--sh-card); padding: 10px 14px; font-size: 13px; display: flex; gap: 10px; align-items: center; animation: pop var(--d-med) var(--e-spring) both; }
+.map-status.is-error { background: var(--c-danger-soft); color: var(--c-danger); }
+.map-status .btn { padding: 6px 12px; font-size: 13px; }
+.map-status .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c-gold); flex: none; animation: shimmer 1s infinite; }
+
+/* ===================================================================== BUILDING VIEW */
+.building-layout { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
+@media (min-width: 780px) { .building-layout { grid-template-columns: 380px 1fr; gap: 40px; } .stack-wrap { position: sticky; top: 20px; } }
+.stack-wrap { display: flex; justify-content: center; padding: 10px 0 0; overflow: visible; }
+.stack { --slab-w: 170px; --slab-h: 170px; --slab-gap: 44px; position: relative; width: 320px; height: calc(var(--slab-h) + (var(--n) - 1) * var(--slab-gap) + 40px); }
+/* each floor is a square rotated 45° in-plane, then tipped back — a parallel
+   (non-perspective) projection, so all slabs read as a consistent isometric stack.
+   The wrapper only translates vertically; the face does the 3D work, so the
+   label chip beside it stays upright and legible. */
+.slab { position: absolute; left: 50%; bottom: 24px; width: var(--slab-w); height: var(--slab-h); margin-left: calc(var(--slab-w) / -2); z-index: var(--i); transform: translateY(0); transition: transform var(--d-slow) var(--e-spring); transition-delay: calc(var(--i) * 60ms); pointer-events: none; }
+.stack.open .slab { transform: translateY(calc(var(--i) * -1 * var(--slab-gap))); }
+.slab-side, .slab-face { position: absolute; inset: 0; border-radius: 12px; transform: rotateX(58deg) rotateZ(-45deg); }
+.slab-side { top: 12px; background: var(--c-black); }
+.slab-face { background: var(--c-white); border: 2px solid var(--c-black); pointer-events: auto; cursor: pointer; background-image: linear-gradient(rgba(0,0,0,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.05) 1px, transparent 1px); background-size: 28px 28px; transition: background-color var(--d-fast), transform var(--d-med) var(--e-spring), box-shadow var(--d-fast); }
+.slab.active .slab-face { background-color: var(--c-gold); transform: rotateX(58deg) rotateZ(-45deg) translate(-6px, -6px); box-shadow: 0 0 0 4px rgba(207,185,145,.35); }
+.slab-tag { position: absolute; left: calc(100% + 26px); top: 50%; transform: translateY(-50%); pointer-events: auto; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px 5px 6px; background: var(--c-white); border-radius: var(--r-pill); box-shadow: var(--sh-card); font-size: 12px; font-weight: 700; white-space: nowrap; transition: background var(--d-fast), color var(--d-fast), transform var(--d-fast) var(--e-spring); }
+.slab-tag::before { content: ""; position: absolute; right: 100%; top: 50%; width: 22px; height: 1.5px; background: var(--c-black); }
+.slab-tag b { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--c-black); color: var(--c-gold); font-size: 11px; }
+.slab.active .slab-tag { background: var(--c-black); color: var(--c-gold); transform: translateY(-50%) scale(1.04); }
+.slab.active .slab-tag b { background: var(--c-gold); color: var(--c-black); }
+.floor-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.floor-row { animation: rise var(--d-med) var(--e-out) both; animation-delay: calc(var(--i) * 40ms); }
+.floor-row-btn { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1.5px solid transparent; border-radius: var(--r-m); background: var(--c-white); box-shadow: var(--sh-card); cursor: pointer; text-align: left; transition: border-color var(--d-fast), transform var(--d-fast) var(--e-spring), box-shadow var(--d-fast); }
+.floor-row-btn:hover { transform: translateY(-1px); box-shadow: var(--sh-lift); }
+.floor-row.active .floor-row-btn { border-color: var(--c-gold); background: linear-gradient(90deg, var(--c-gold-soft), var(--c-white) 60%); }
+.floor-num { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--c-black); color: var(--c-gold); font-weight: 800; font-size: 13px; flex: none; }
+.floor-info { flex: 1; min-width: 0; }
+.floor-name { display: block; font-weight: 700; font-size: 16px; }
+.floor-meta { display: block; font-size: 13px; color: var(--c-muted); margin-top: 2px; }
+.chev { color: var(--c-muted); transition: transform var(--d-med) var(--e-spring); font-size: 18px; }
+.floor-row.expanded .chev { transform: rotate(90deg); }
+.floor-bathrooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 12px 4px 6px; }
+.bath-card { display: grid; gap: 6px; padding: 14px; border-radius: var(--r-m); background: var(--c-white); box-shadow: var(--sh-card); text-decoration: none; animation: pop var(--d-med) var(--e-spring) both; animation-delay: calc(var(--i) * 50ms); transition: transform var(--d-fast) var(--e-spring), box-shadow var(--d-fast); }
+.bath-card:hover { transform: translateY(-2px); box-shadow: var(--sh-lift); }
+.bath-label { font-weight: 800; font-size: 15px; }
+.bath-score { font-size: 24px; font-weight: 800; letter-spacing: -.03em; display: flex; align-items: baseline; gap: 4px; }
+.bath-score small { font-size: 12px; font-weight: 600; color: var(--c-gold-deep); }
+.bath-score.none { font-size: 13px; font-weight: 600; color: var(--c-muted); }
+.bath-votes { font-size: 12px; color: var(--c-muted); }
+
+/* ===================================================================== BATHROOM VIEW */
+.score-hero { display: flex; align-items: center; gap: 18px; padding: 22px; margin-bottom: 14px; }
+.score-big { font-size: 64px; font-weight: 900; letter-spacing: -.05em; line-height: 1; }
+.score-big.none { font-size: 22px; color: var(--c-muted); letter-spacing: -.02em; }
+.score-side { display: grid; gap: 6px; }
+.score-side .stars-static { font-size: 18px; }
+.criteria { display: grid; gap: 12px; padding: 18px 22px; margin-bottom: 14px; }
+.crit { display: grid; grid-template-columns: 96px 1fr 36px; align-items: center; gap: 12px; font-size: 14px; }
+.crit b { font-weight: 700; }
+.crit .val { text-align: right; font-weight: 800; }
+.bar { height: 10px; border-radius: var(--r-pill); background: var(--c-gold-soft); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--c-gold-deep), var(--c-gold)); border-radius: var(--r-pill); transition: width var(--d-slow) var(--e-out); }
+.rate-cta { margin: 6px 0 26px; }
+.my-vote { display: grid; gap: 8px; }
+.my-vote-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 14px; font-size: 13px; }
+.my-vote-grid span { display: flex; justify-content: space-between; }
+.reviews { display: grid; gap: 12px; margin-top: 12px; }
+.review { padding: 16px 18px; display: grid; gap: 8px; animation: rise var(--d-med) var(--e-out) both; animation-delay: calc(var(--i) * 40ms); }
+.review-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.review-score { display: flex; align-items: center; gap: 8px; font-weight: 800; }
+.review-time { font-size: 12px; color: var(--c-muted); }
+.review-text { font-size: 15px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.review-photo { border-radius: var(--r-s); max-height: 360px; width: auto; max-width: 100%; object-fit: cover; }
+.review-crit { display: flex; flex-wrap: wrap; gap: 6px; }
+.section-title { display: flex; align-items: baseline; justify-content: space-between; margin-top: 22px; }
+.section-title span { font-size: 13px; color: var(--c-muted); }
+
+/* ===================================================================== MODAL */
+.modal-root { position: fixed; inset: 0; z-index: 100; display: grid; align-items: end; background: rgba(0,0,0,.5); animation: pop var(--d-fast) both; }
+@media (min-width: 640px) { .modal-root { align-items: center; justify-items: center; padding: 20px; } }
+.modal-sheet { background: var(--c-paper); border-radius: var(--r-l) var(--r-l) 0 0; max-height: 92vh; max-height: 92dvh; overflow: auto; width: 100%; padding: 18px 18px calc(20px + env(safe-area-inset-bottom)); animation: slideUp var(--d-slow) var(--e-spring) both; }
+@media (min-width: 640px) { .modal-sheet { max-width: 520px; border-radius: var(--r-l); padding: 24px; } }
+.modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+
+/* ===================================================================== LEADERBOARD */
+.lb-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.lb-controls select { padding: 10px 36px 10px 14px; border-radius: var(--r-pill); border: 1.5px solid var(--c-line); background: var(--c-white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23141414' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 14px center; appearance: none; font-weight: 700; }
+.lb-note { font-size: 13px; color: var(--c-muted); }
+.lb-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.lb-row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 12px; padding: 12px 14px; text-decoration: none; animation: rise var(--d-med) var(--e-out) both; animation-delay: calc(var(--i) * 35ms); transition: transform var(--d-fast) var(--e-spring), box-shadow var(--d-fast); }
+.lb-row:hover { transform: translateY(-1px); box-shadow: var(--sh-lift); }
+.lb-rank { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--c-paper); font-weight: 800; font-size: 15px; }
+.lb-row.top-1 { border: 2px solid var(--c-gold); background: linear-gradient(120deg, var(--c-gold-soft), var(--c-white) 55%); }
+.lb-row.top-1 .lb-rank { background: var(--c-gold); color: var(--c-black); font-size: 20px; }
+.lb-row.top-2 .lb-rank { background: var(--c-silver); color: var(--c-black); }
+.lb-row.top-3 .lb-rank { background: var(--c-bronze); color: var(--c-white); }
+.lb-name { font-weight: 800; font-size: 16px; }
+.lb-where { font-size: 13px; color: var(--c-muted); margin-top: 2px; }
+.lb-score { text-align: right; }
+.lb-score b { display: block; font-size: 22px; font-weight: 800; letter-spacing: -.03em; }
+.lb-score span { font-size: 12px; color: var(--c-muted); }
+
+/* ===================================================================== SUBMIT */
+.submit-form { padding: 20px; }
+.submit-done { text-align: center; padding: 32px 20px; display: grid; gap: 12px; justify-items: center; }
+.submit-done .big { font-size: 44px; }
+
+/* ===================================================================== DEV PANEL */
+.dev-panel { position: absolute; top: 12px; right: 12px; z-index: 20; width: min(300px, calc(100vw - 24px)); background: var(--c-black); color: var(--c-gold); border-radius: var(--r-m); padding: 12px; font-size: 13px; box-shadow: var(--sh-lift); display: grid; gap: 8px; }
+.dev-head { display: flex; justify-content: space-between; font-weight: 800; }
+.dev-panel select { width: 100%; padding: 8px; border-radius: 8px; border: 0; background: var(--c-white); color: var(--c-ink); font-size: 13px; }
+.dev-tip { color: #fff; opacity: .85; font-size: 12px; line-height: 1.4; }
+.dev-actions { display: flex; gap: 6px; }
+.dev-actions button { flex: 1; padding: 8px; border-radius: 8px; border: 0; background: var(--c-gold); color: var(--c-black); font-weight: 700; cursor: pointer; font-size: 12px; }
+.dev-actions button.secondary { background: rgba(255,255,255,.14); color: var(--c-gold); }
+
+/* ===================================================================== TOAST */
+.toast-root { position: fixed; left: 0; right: 0; bottom: calc(18px + env(safe-area-inset-bottom)); display: grid; justify-items: center; gap: 8px; z-index: 200; pointer-events: none; }
+.toast { background: var(--c-black); color: var(--c-gold); padding: 10px 16px; border-radius: var(--r-pill); font-size: 14px; font-weight: 600; box-shadow: var(--sh-lift); animation: pop var(--d-med) var(--e-spring) both; max-width: 92vw; text-align: center; }
+.toast-error { background: var(--c-danger); color: #fff; }
+.toast-ok { background: var(--c-ok); color: #fff; }
+.toast.leaving { opacity: 0; transform: translateY(8px); transition: opacity var(--d-med), transform var(--d-med); }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#/map"><span class="brand-mark" id="brandMark">B</span><span class="brand-name" id="brandName">Boiler Bathrooms</span></a>
+  <nav class="nav" id="nav">
+    <a href="#/map" data-route="map">Map</a>
+    <a href="#/leaderboard" data-route="leaderboard">Leaderboard</a>
+    <a href="#/submit" data-route="submit">Submit</a>
+  </nav>
+</header>
+<div id="banners"></div>
+<main id="app"></main>
+<div id="modalRoot"></div>
+<div class="toast-root" id="toastRoot" aria-live="polite"></div>
+<script>
+/* =====================================================================
+   CONFIG
+   Everything campus-specific lives here. Adding a school later means a
+   new `schools` row in Postgres plus a new block like `campus` below —
+   no code changes.
+   ===================================================================== */
+const CONFIG = {
+  SUPABASE_URL: "https://YOUR-PROJECT-REF.supabase.co",
+  SUPABASE_ANON_KEY: "YOUR-SUPABASE-ANON-KEY",
+  SCHOOL_SLUG: "purdue",
+
+  // Flip to true to click-place map pins. See the DEV TOOLS section.
+  DEV_PIN_MODE: false,
+
+  campus: {
+    appName: "Boiler Bathrooms",
+    tagline: "Rate the thrones of Purdue.",
+    emailDomain: "purdue.edu",
+    // Hosted campus map image, loaded at runtime (a Supabase Storage public URL works well).
+    mapImage: "https://YOUR-PROJECT-REF.supabase.co/storage/v1/object/public/bathroom-photos/purdue-campus-map.png",
+    mapTiltDeg: 14,
+    // x / y are percentages of the map image's natural width / height.
+    // They are rough placeholders — use DEV_PIN_MODE to correct them by clicking.
+    buildings: [
+      { code: "WALC", name: "Wilmeth Active Learning Center", x: 42, y: 38, floors: 5 },   // VERIFY floors
+      { code: "PMU",  name: "Purdue Memorial Union",          x: 55, y: 52, floors: 4 },   // Basement, Ground, First, Second
+      { code: "DSCB", name: "Hall of Data Science and AI",    x: 47, y: 33, floors: 4 },
+      { code: "PHYS", name: "Physics Building",               x: 44, y: 44, floors: 4 },   // VERIFY floors
+      { code: "CL50", name: "Class of 1950 Lecture Hall",     x: 58, y: 46, floors: 2 },   // VERIFY floors
+      { code: "BRNG", name: "Beering Hall of Liberal Arts and Education", x: 60, y: 44, floors: 7 }, // VERIFY floors
+      { code: "MATH", name: "Mathematical Sciences Building", x: 57, y: 41, floors: 9 },   // VERIFY floors
+      { code: "CHAS", name: "Chaney-Hale Hall of Science",    x: 45, y: 41, floors: 3 },   // VERIFY floors
+      { code: "HIKS", name: "Hicks Undergraduate Library",    x: 56, y: 49, floors: 2 },   // VERIFY floors
+      { code: "LWSN", name: "Lawson Computer Science Building", x: 40, y: 36, floors: 3 }  // VERIFY floors
+    ],
+    // Known restroom layouts. Buildings not listed here get `defaultBathroomLabels`
+    // on every floor. Used for the no-database demo mode; the SQL seed mirrors it.
+    bathroomPlans: {
+      PMU: {
+        "Basement":     ["Men's", "Women's"],
+        "Ground Floor": ["Men's", "Women's", "Gender Neutral"],
+        "First Floor":  ["Men's", "Women's", "Gender Neutral"],
+        "Second Floor": ["Men's", "Women's", "Gender Neutral"]
+      }
+    },
+    defaultBathroomLabels: ["Men's", "Women's"]
+  },
+
+  criteria: [
+    { key: "cleanliness", label: "Cleanliness", hint: "Would you touch the handle?" },
+    { key: "privacy",     label: "Privacy",     hint: "Stall gaps, locks, foot traffic" },
+    { key: "smell",       label: "Smell",       hint: "Be honest" },
+    { key: "vibes",       label: "Vibes",       hint: "Lighting, quiet, overall energy" }
+  ],
+  BAYESIAN_M: 5,
+  REVIEW_MAX_CHARS: 500,
+  PHOTO_MAX_BYTES: 5 * 1024 * 1024,
+  PHOTO_MAX_EDGE: 1600,
+  PHOTO_BUCKET: "bathroom-photos"
+};
+
+/* =====================================================================
+   SUPABASE CLIENT
+   `db` is null until real keys are in CONFIG; the app then runs in a
+   read-only demo mode built from the config so the UI is still usable.
+   ===================================================================== */
+function isSupabaseConfigured() {
+  return /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(CONFIG.SUPABASE_URL)
+    && typeof CONFIG.SUPABASE_ANON_KEY === "string"
+    && CONFIG.SUPABASE_ANON_KEY.length > 40
+    && !CONFIG.SUPABASE_ANON_KEY.startsWith("YOUR-");
+}
+
+const db = (isSupabaseConfigured() && window.supabase)
+  ? window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    })
+  : null;
+
+/* =====================================================================
+   STATE
+   The single mutable object. Everything below reads/writes through it.
+   ===================================================================== */
+const state = {
+  route: { name: "map", params: {} },
+  status: "idle",          // idle | loading | ready | error  (campus data)
+  error: null,
+  demo: !db,
+  online: navigator.onLine,
+
+  school: null,
+  buildings: [],           // rows merged with CONFIG x/y by code
+  floors: [],
+  bathrooms: [],           // approved only
+  votes: [],               // score summaries for the whole school (no text/photos)
+
+  map: {
+    scale: 1, tx: 0, ty: 0,
+    minScale: 0.2, maxScale: 8,
+    W: 0, H: 0,            // natural image size
+    perspective: 1400,
+    imageStatus: "loading", // loading | ready | error
+    fitted: false,
+    pointers: new Map(),
+    gesture: null,
+    resizeBound: false
+  },
+  building: { code: null, activeFloorId: null, expandedFloorId: null },
+  bathroom: { id: null, status: "idle", votes: [], myVote: null, error: null },
+  leaderboard: { period: null },
+  submit: { done: false },
+  modal: null,
+  dev: { index: 0, placed: {} }
+};
+
+/* ---- derived selectors (pure reads of state) ---- */
+function getBuilding(id)        { return state.buildings.find(b => b.id === id) || null; }
+function getBuildingByCode(code){ return state.buildings.find(b => b.code.toUpperCase() === String(code).toUpperCase()) || null; }
+function getFloor(id)           { return state.floors.find(f => f.id === id) || null; }
+function getBathroom(id)        { return state.bathrooms.find(r => r.id === id) || null; }
+function floorsOf(buildingId)   { return state.floors.filter(f => f.building_id === buildingId).sort((a, b) => a.sort_order - b.sort_order); }
+function bathroomsOf(floorId)   { return state.bathrooms.filter(r => r.floor_id === floorId).sort((a, b) => a.label.localeCompare(b.label)); }
+function bathroomsInBuilding(buildingId) { return state.bathrooms.filter(r => r.building_id === buildingId); }
+function votesOf(bathroomId, period) { return state.votes.filter(v => v.bathroom_id === bathroomId && (!period || v.period === period)); }
+
+/* =====================================================================
+   IDENTITY
+   Email → normalized → validated → SHA-256 hex. The raw address never
+   leaves the browser; only the hash is sent as `voter_hash`.
+   ===================================================================== */
+const STORAGE_KEYS = {
+  email: "bb:email",
+  vote: (bathroomId, period) => `bb:voted:${bathroomId}:${period}`
+};
+
+function normalizeEmail(raw) {
+  return String(raw || "").trim().toLowerCase();
+}
+
+function isValidSchoolEmail(email) {
+  const domain = CONFIG.campus.emailDomain.replace(/\./g, "\\.");
+  return new RegExp(`^[a-z0-9][a-z0-9._%+-]*@${domain}$`).test(email);
+}
+
+// crypto.subtle only exists in secure contexts (https:// or localhost).
+async function hashEmail(email) {
+  if (!window.crypto || !crypto.subtle) throw new Error("This page must be served over HTTPS to submit a rating.");
+  const bytes = new TextEncoder().encode(email);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function readSavedEmail() {
+  try { return localStorage.getItem(STORAGE_KEYS.email) || ""; } catch { return ""; }
+}
+function saveEmail(email) {
+  try { localStorage.setItem(STORAGE_KEYS.email, email); } catch { /* private mode etc. */ }
+}
+// Soft duplicate guard: remembers what this browser rated so we can short-circuit
+// before hitting the network. The unique index in Postgres is the real guard.
+function readLocalVote(bathroomId, period) {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.vote(bathroomId, period)) || "null"); } catch { return null; }
+}
+function writeLocalVote(bathroomId, period, vote) {
+  try { localStorage.setItem(STORAGE_KEYS.vote(bathroomId, period), JSON.stringify(vote)); } catch { /* ignore */ }
+}
+
+/* =====================================================================
+   DATA ACCESS
+   Every Supabase call lives here as a named async function. Views never
+   build queries. Functions throw on error; callers decide how to show it.
+   ===================================================================== */
+const VOTE_SUMMARY_COLUMNS = "id,bathroom_id,period,cleanliness,privacy,smell,vibes,created_at";
+const VOTE_DETAIL_COLUMNS  = VOTE_SUMMARY_COLUMNS + ",review_text,photo_url";  // never voter_hash
+const PAGE = 1000; // PostgREST default max rows per request
+
+async function fetchSchool(slug) {
+  const { data, error } = await db.from("schools").select("id,slug,name,email_domain").eq("slug", slug).maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error(`No school with slug "${slug}". Run the SQL migration first.`);
+  return data;
+}
+
+async function fetchBuildings(schoolId) {
+  const { data, error } = await db.from("buildings").select("id,code,name").eq("school_id", schoolId).order("code");
+  if (error) throw error;
+  return data;
+}
+
+async function fetchFloors(schoolId) {
+  const { data, error } = await db.from("floors").select("id,building_id,name,sort_order").eq("school_id", schoolId).order("sort_order");
+  if (error) throw error;
+  return data;
+}
+
+// RLS already hides non-approved rows; the filter is here so intent is explicit.
+async function fetchBathrooms(schoolId) {
+  const { data, error } = await db.from("bathrooms").select("id,building_id,floor_id,label").eq("school_id", schoolId).eq("status", "approved").order("label");
+  if (error) throw error;
+  return data;
+}
+
+// Score-only vote rows for the whole school, paged past the 1000-row cap.
+async function fetchVoteSummaries(schoolId) {
+  const rows = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await db.from("votes").select(VOTE_SUMMARY_COLUMNS).eq("school_id", schoolId).order("created_at", { ascending: false }).range(from, from + PAGE - 1);
+    if (error) throw error;
+    rows.push(...data);
+    if (data.length < PAGE) break;
+  }
+  return rows;
+}
+
+async function fetchBathroomVotes(bathroomId) {
+  const { data, error } = await db.from("votes").select(VOTE_DETAIL_COLUMNS).eq("bathroom_id", bathroomId).order("created_at", { ascending: false }).limit(500);
+  if (error) throw error;
+  return data;
+}
+
+async function fetchMyVote(bathroomId, voterHash, period) {
+  const { data, error } = await db.from("votes").select(VOTE_DETAIL_COLUMNS).eq("bathroom_id", bathroomId).eq("voter_hash", voterHash).eq("period", period).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+// `period` is deliberately absent: Postgres sets it from its own clock.
+async function insertVote(row) {
+  const { data, error } = await db.from("votes").insert(row).select(VOTE_DETAIL_COLUMNS).single();
+  if (error) throw error;
+  return data;
+}
+
+// No `.select()` here: RLS lets anon insert a pending bathroom but not read it back.
+async function insertBathroom(row) {
+  const { error } = await db.from("bathrooms").insert({ ...row, status: "pending" });
+  if (error) throw error;
+}
+
+// Single seam for the storage provider. Returns a public URL string.
+async function uploadPhoto(file) {
+  if (!db) throw new Error("Photo uploads need Supabase configured.");
+  const blob = await downscaleImage(file, CONFIG.PHOTO_MAX_EDGE);
+  const path = `${state.school.slug}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+  const { error } = await db.storage.from(CONFIG.PHOTO_BUCKET).upload(path, blob, { contentType: "image/jpeg", cacheControl: "31536000", upsert: false });
+  if (error) throw error;
+  const { data } = db.storage.from(CONFIG.PHOTO_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+// Canvas downscale so a 12 MP phone photo becomes a ~300 KB JPEG before upload.
+function downscaleImage(file, maxEdge) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const ratio = Math.min(1, maxEdge / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.max(1, Math.round(img.naturalWidth * ratio));
+      const h = Math.max(1, Math.round(img.naturalHeight * ratio));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error("Couldn't process that image.")), "image/jpeg", 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("That file doesn't look like an image we can read.")); };
+    img.src = url;
+  });
+}
+
+function mergeBuildingConfig(rows) {
+  const byCode = Object.fromEntries(CONFIG.campus.buildings.map(b => [b.code.toUpperCase(), b]));
+  return rows.map(r => {
+    const cfg = byCode[r.code.toUpperCase()];
+    return { ...r, x: cfg ? cfg.x : null, y: cfg ? cfg.y : null };
+  });
+}
+
+// Demo mode: derive the same structure the SQL seed creates, straight from CONFIG.
+function buildLocalCampus() {
+  const c = CONFIG.campus;
+  const school = { id: `local-${CONFIG.SCHOOL_SLUG}`, slug: CONFIG.SCHOOL_SLUG, name: c.appName, email_domain: c.emailDomain };
+  const buildings = [], floors = [], bathrooms = [];
+  c.buildings.forEach(b => {
+    const building = { id: `b-${b.code}`, code: b.code, name: b.name, x: b.x, y: b.y };
+    buildings.push(building);
+    const plan = c.bathroomPlans[b.code];
+    const floorNames = plan ? Object.keys(plan) : Array.from({ length: b.floors }, (_, i) => `Floor ${i + 1}`);
+    floorNames.forEach((name, i) => {
+      const floor = { id: `f-${b.code}-${i}`, building_id: building.id, name, sort_order: i };
+      floors.push(floor);
+      (plan ? plan[name] : c.defaultBathroomLabels).forEach((label, j) => {
+        bathrooms.push({ id: `r-${b.code}-${i}-${j}`, building_id: building.id, floor_id: floor.id, label });
+      });
+    });
+  });
+  return { school, buildings, floors, bathrooms, votes: [] };
+}
+
+function describeError(err) {
+  const msg = (err && err.message) || String(err);
+  if (!navigator.onLine) return "You're offline. Reconnect and try again.";
+  if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) return "Couldn't reach the database. Check your connection and try again.";
+  if (err && err.code === "42P01") return "Tables are missing. Paste the SQL migration into the Supabase SQL editor and run it.";
+  return msg;
+}
+
+async function loadCampus() {
+  state.status = "loading";
+  state.error = null;
+  render();
+  try {
+    if (!db) {
+      if (isSupabaseConfigured() && !window.supabase) throw new Error("The Supabase client script didn't load. Check your connection and reload.");
+      Object.assign(state, buildLocalCampus());
+      state.demo = true;
+    } else {
+      const school = await fetchSchool(CONFIG.SCHOOL_SLUG);
+      const [buildings, floors, bathrooms, votes] = await Promise.all([
+        fetchBuildings(school.id), fetchFloors(school.id), fetchBathrooms(school.id), fetchVoteSummaries(school.id)
+      ]);
+      Object.assign(state, { school, buildings: mergeBuildingConfig(buildings), floors, bathrooms, votes });
+    }
+    state.status = "ready";
+  } catch (err) {
+    console.error(err);
+    state.status = "error";
+    state.error = describeError(err);
+  }
+  render();
+}
+
+/* =====================================================================
+   SCORING
+   Pure functions only: no DOM, no network, no `state`. Unit-testable.
+   ===================================================================== */
+const CRITERIA_KEYS = ["cleanliness", "privacy", "smell", "vibes"];
+
+function voteOverall(v) {
+  return CRITERIA_KEYS.reduce((sum, k) => sum + Number(v[k]), 0) / CRITERIA_KEYS.length;
+}
+
+// { count, avg, criteria: { cleanliness: avg, ... } } — avg is null with no votes.
+function summarizeVotes(votes) {
+  const count = votes.length;
+  const criteria = {};
+  CRITERIA_KEYS.forEach(k => {
+    criteria[k] = count ? votes.reduce((s, v) => s + Number(v[k]), 0) / count : null;
+  });
+  const avg = count ? votes.reduce((s, v) => s + voteOverall(v), 0) / count : null;
+  return { count, avg, criteria };
+}
+
+// Bayesian weighted average. A bathroom with few votes is pulled toward the
+// campus-wide mean C; only after ~m votes does its own mean R dominate. This is
+// why two 5-star votes can't out-rank forty 4.6s.
+function bayesianScore(R, v, C, m) {
+  if (!v) return C;
+  return (v / (v + m)) * R + (m / (v + m)) * C;
+}
+
+// Postgres sets `period` from now() in UTC; mirror that here so the client's
+// idea of "this month" matches the server's near the boundary.
+function currentPeriod(date = new Date()) {
+  return date.toISOString().slice(0, 7);
+}
+
+function nextPeriodStart(period) {
+  const [y, m] = period.split("-").map(Number);
+  return new Date(Date.UTC(y, m, 1));
+}
+
+function periodLabel(period) {
+  const [y, m] = period.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(undefined, { month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+// Distinct periods present in the data, newest first.
+function listPeriods(votes) {
+  return Array.from(new Set(votes.map(v => v.period))).sort().reverse();
+}
+
+// Ranks bathrooms for one period. Returns [{ bathroom, count, avg, weighted }]
+// sorted by weighted score desc, then by vote count, then label.
+function rankBathrooms(votes, bathrooms, period, m = CONFIG.BAYESIAN_M) {
+  const inPeriod = votes.filter(v => v.period === period);
+  if (!inPeriod.length) return [];
+  const C = inPeriod.reduce((s, v) => s + voteOverall(v), 0) / inPeriod.length;
+  const byBathroom = new Map();
+  inPeriod.forEach(v => { (byBathroom.get(v.bathroom_id) || byBathroom.set(v.bathroom_id, []).get(v.bathroom_id)).push(v); });
+  const entries = [];
+  byBathroom.forEach((rows, bathroomId) => {
+    const bathroom = bathrooms.find(b => b.id === bathroomId);
+    if (!bathroom) return; // vote on a bathroom that is no longer approved
+    const { count, avg } = summarizeVotes(rows);
+    entries.push({ bathroom, count, avg, weighted: bayesianScore(avg, count, C, m) });
+  });
+  return entries.sort((a, b) => b.weighted - a.weighted || b.count - a.count || a.bathroom.label.localeCompare(b.bathroom.label));
+}
+
+/* =====================================================================
+   ROUTER
+   Hash routes so deep links and the back button work on static hosting.
+   ===================================================================== */
+const ROUTES = [
+  { name: "map",         pattern: /^\/map\/?$/ },
+  { name: "building",    pattern: /^\/building\/([^/]+)\/?$/, keys: ["code"] },
+  { name: "bathroom",    pattern: /^\/bathroom\/([^/]+)\/?$/, keys: ["id"] },
+  { name: "leaderboard", pattern: /^\/leaderboard\/?$/ },
+  { name: "submit",      pattern: /^\/submit\/?$/ }
+];
+
+function parseRoute(hash) {
+  let path = (hash || "").replace(/^#/, "");
+  try { path = decodeURIComponent(path); } catch { /* leave as-is */ }
+  if (!path || path === "/") path = "/map";
+  for (const r of ROUTES) {
+    const m = path.match(r.pattern);
+    if (m) {
+      const params = {};
+      (r.keys || []).forEach((k, i) => { params[k] = m[i + 1]; });
+      return { name: r.name, params };
+    }
+  }
+  return { name: "notfound", params: { path } };
+}
+
+function navigate(path, { replace = false } = {}) {
+  if (replace) location.replace("#" + path); else location.hash = path;
+}
+
+function handleRouteChange() {
+  state.route = parseRoute(location.hash);
+  if (state.modal) closeModal();
+  document.getElementById("app").scrollTo(0, 0);
+  render();
+}
+
+function updateNav() {
+  const active = { building: "map", bathroom: "map" }[state.route.name] || state.route.name;
+  document.querySelectorAll("#nav a").forEach(a => a.classList.toggle("active", a.dataset.route === active));
+}
+
+/* =====================================================================
+   VIEWS
+   One function per screen. Each writes into #app from `state`.
+   ===================================================================== */
+function render() {
+  const root = document.getElementById("app");
+  updateNav();
+  renderBanners();
+  const { name, params } = state.route;
+  if (name !== "map" && state.status === "error") return renderErrorView(root);
+  switch (name) {
+    case "map":         return renderMapView(root);
+    case "building":    return renderBuildingView(root, params.code);
+    case "bathroom":    return renderBathroomView(root, params.id);
+    case "leaderboard": return renderLeaderboardView(root);
+    case "submit":      return renderSubmitView(root);
+    default:            return renderNotFound(root);
+  }
+}
+
+function renderBanners() {
+  const el = document.getElementById("banners");
+  let html = "";
+  if (!state.online) html += `<div class="banner banner-offline">You're offline — showing what's cached. Ratings can't be sent until you reconnect.</div>`;
+  else if (state.demo && state.status === "ready") html += `<div class="banner banner-demo">Demo mode · add <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code> to <code>CONFIG</code> to go live.</div>`;
+  if (el.innerHTML !== html) el.innerHTML = html;
+}
+
+function renderErrorView(root) {
+  root.innerHTML = `<section class="view view-narrow"><div class="error-box"><b>Something went wrong</b><p>${esc(state.error || "Unknown error")}</p><button class="btn btn-primary" id="retryLoad">Try again</button></div></section>`;
+  root.querySelector("#retryLoad").addEventListener("click", loadCampus);
+}
+
+function renderNotFound(root) {
+  root.innerHTML = `<section class="view view-narrow"><div class="empty"><b>Nothing here</b>That link doesn't go anywhere. <a href="#/map">Back to the map</a></div></section>`;
+}
+
+/* ---------------------------------------------------------------- MAP */
+function renderMapView(root) {
+  let view = root.querySelector(".map-view");
+  if (!view) {
+    root.innerHTML = mapViewTemplate();
+    view = root.querySelector(".map-view");
+    mountMap(view);
+  }
+  syncMapOverlays(view);
+}
+
+function mapViewTemplate() {
+  const blobs = [[8,6,30,18],[46,4,22,26],[12,34,18,20],[40,38,30,22],[74,30,16,36],[8,64,28,18],[44,68,34,14],[14,88,60,6]]
+    .map(([l,t,w,h]) => `<i style="left:${l}%;top:${t}%;width:${w}%;height:${h}%"></i>`).join("");
+  return `
+  <section class="map-view">
+    <div class="map-viewport" id="mapViewport" role="application" aria-label="${esc(CONFIG.campus.appName)} campus map">
+      <div class="map-tilt">
+        <div class="map-pan" id="mapPan">
+          <img class="map-img" id="mapImg" alt="Illustrated campus map" draggable="false">
+          <div class="map-pins" id="mapPins"></div>
+        </div>
+      </div>
+    </div>
+    <div class="map-skeleton" id="mapSkeleton" aria-hidden="true"><div class="map-skel-plate skel">${blobs}</div><p>Loading campus map…</p></div>
+    <div class="map-fallback" id="mapFallback" hidden></div>
+    <div class="map-status" id="mapStatus" hidden></div>
+    <div class="map-hud">
+      <div class="map-hint" id="mapHint">Drag to pan · pinch or scroll to zoom · tap a pin</div>
+      <div class="map-zoom" id="mapZoom">
+        <button type="button" data-zoom="in" aria-label="Zoom in">+</button>
+        <button type="button" data-zoom="out" aria-label="Zoom out">−</button>
+        <button type="button" data-zoom="reset" aria-label="Reset view">⟲</button>
+      </div>
+    </div>
+  </section>`;
+}
+
+function mountMap(view) {
+  const m = state.map;
+  const viewport = view.querySelector("#mapViewport");
+  const img = view.querySelector("#mapImg");
+  m.imageStatus = "loading";
+  m.fitted = false;
+  m.perspective = parseFloat(getComputedStyle(viewport).perspective) || 1400;
+
+  img.addEventListener("load", () => {
+    if (!img.naturalWidth) return;
+    m.W = img.naturalWidth; m.H = img.naturalHeight; m.imageStatus = "ready";
+    view.querySelector("#mapPan").style.width = m.W + "px";
+    view.querySelector("#mapPan").style.height = m.H + "px";
+    computeMapBounds(viewport);
+    fitMapToPins(viewport);
+    syncMapOverlays(view);
+  });
+  img.addEventListener("error", () => { m.imageStatus = "error"; syncMapOverlays(view); });
+  img.src = CONFIG.campus.mapImage;
+  if (img.complete && img.naturalWidth) img.dispatchEvent(new Event("load"));
+
+  bindMapPointer(viewport);
+  view.querySelector("#mapZoom").addEventListener("click", e => {
+    const btn = e.target.closest("button"); if (!btn || m.imageStatus !== "ready") return;
+    const rect = viewport.getBoundingClientRect();
+    const center = { x: rect.width / 2, y: rect.height / 2 };
+    if (btn.dataset.zoom === "reset") { m.fitted = false; fitMapToPins(viewport); }
+    else zoomMapAbout(center, m.scale * (btn.dataset.zoom === "in" ? 1.4 : 1 / 1.4), center);
+    applyMapTransform();
+  });
+  if (!m.resizeBound) {
+    window.addEventListener("resize", () => {
+      const vp = document.getElementById("mapViewport");
+      if (vp && m.imageStatus === "ready") { computeMapBounds(vp); applyMapTransform(); }
+    });
+    m.resizeBound = true;
+  }
+  if (devPinEnabled()) mountDevPanel(view);
+}
+
+function syncMapOverlays(view) {
+  const m = state.map;
+  view.querySelector("#mapSkeleton").hidden = m.imageStatus !== "loading";
+  const fallback = view.querySelector("#mapFallback");
+  fallback.hidden = m.imageStatus !== "error";
+  if (m.imageStatus === "error") renderMapFallback(fallback);
+  view.querySelector("#mapHint").hidden = m.imageStatus !== "ready";
+  view.querySelector("#mapZoom").hidden = m.imageStatus !== "ready";
+
+  const status = view.querySelector("#mapStatus");
+  status.className = "map-status";
+  if (state.status === "loading") { status.hidden = false; status.innerHTML = `<span class="dot"></span>Loading buildings…`; }
+  else if (state.status === "error") {
+    status.hidden = false; status.classList.add("is-error");
+    status.innerHTML = `<span>${esc(state.error)}</span><button class="btn btn-primary" type="button" id="mapRetry">Retry</button>`;
+    status.querySelector("#mapRetry").addEventListener("click", loadCampus);
+  } else status.hidden = true;
+
+  if (m.imageStatus === "ready" && state.status === "ready") {
+    renderPins(view.querySelector("#mapPins"));
+    if (!m.fitted) fitMapToPins(view.querySelector("#mapViewport"));
+  }
+  if (devPinEnabled()) renderDevPanel();
+}
+
+function renderMapFallback(el) {
+  const list = state.buildings.map(b => `<a href="#/building/${esc(b.code)}"><b>${esc(b.code)}</b><span>${esc(b.name)}</span></a>`).join("");
+  el.innerHTML = `<div class="card"><b>The map image didn't load</b><p class="sub">Check <code>CONFIG.campus.mapImage</code> or your connection. You can still browse by building:</p><div class="fallback-list">${list || '<span class="sub">Buildings will appear once data loads.</span>'}</div></div>`;
+}
+
+function buildingSummary(building) {
+  const ids = new Set(bathroomsInBuilding(building.id).map(r => r.id));
+  return summarizeVotes(state.votes.filter(v => ids.has(v.bathroom_id)));
+}
+
+function renderPins(container) {
+  container.innerHTML = state.buildings.filter(b => b.x != null && b.y != null).map(b => {
+    const s = buildingSummary(b);
+    const score = s.avg == null ? `<span class="pin-score none">new</span>` : `<span class="pin-score">${fmtScore(s.avg)}<span aria-hidden="true">★</span></span>`;
+    return `<div class="pin" data-code="${esc(b.code)}" style="left:${b.x}%;top:${b.y}%">
+      <div class="pin-body" role="link" tabindex="0" aria-label="${esc(b.name)}, ${s.avg == null ? "no ratings yet" : "rated " + fmtScore(s.avg)}">
+        <span class="pin-code">${esc(b.code)}</span>${score}<span class="pin-name">${esc(b.name)}</span>
+      </div></div>`;
+  }).join("");
+  container.querySelectorAll(".pin-body").forEach(el => el.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(`/building/${el.parentElement.dataset.code}`); }
+  }));
+}
+
+function computeMapBounds(viewport) {
+  const m = state.map, rect = viewport.getBoundingClientRect();
+  const fit = Math.min(rect.width / m.W, rect.height / m.H);
+  m.minScale = fit * 0.8;
+  m.maxScale = fit * 10;
+}
+
+// Initial framing: zoom to the bounding box of the pins so phones open on the
+// interesting part of campus instead of a postage-stamp of the whole map.
+function fitMapToPins(viewport) {
+  const m = state.map, rect = viewport.getBoundingClientRect();
+  if (!m.W || !rect.width) return;
+  const fit = Math.min(rect.width / m.W, rect.height / m.H);
+  const pins = state.buildings.filter(b => b.x != null && b.y != null);
+  let scale = fit, cx = m.W / 2, cy = m.H / 2;
+  if (pins.length >= 2) {
+    const xs = pins.map(b => b.x / 100 * m.W), ys = pins.map(b => b.y / 100 * m.H);
+    const bw = Math.max(...xs) - Math.min(...xs) + 220, bh = Math.max(...ys) - Math.min(...ys) + 260;
+    scale = clamp(Math.min(rect.width / bw, rect.height / bh), fit, fit * 3.5);
+    cx = (Math.max(...xs) + Math.min(...xs)) / 2; cy = (Math.max(...ys) + Math.min(...ys)) / 2;
+    m.fitted = state.status === "ready";
+  }
+  m.scale = scale;
+  m.tx = rect.width / 2 - cx * scale;
+  m.ty = rect.height / 2 - cy * scale;
+  applyMapTransform();
+}
+
+function applyMapTransform() {
+  const m = state.map, pan = document.getElementById("mapPan"), vp = document.getElementById("mapViewport");
+  if (!pan || !vp) return;
+  const rect = vp.getBoundingClientRect();
+  m.scale = clamp(m.scale, m.minScale, m.maxScale);
+  // keep at least 30% of the viewport covered so the map can't be flung away
+  m.tx = clamp(m.tx, rect.width * 0.3 - m.W * m.scale, rect.width * 0.7);
+  m.ty = clamp(m.ty, rect.height * 0.3 - m.H * m.scale, rect.height * 0.7);
+  pan.style.transform = `translate(${m.tx}px, ${m.ty}px) scale(${m.scale})`;
+  pan.style.setProperty("--pin-k", (1 / m.scale).toFixed(4));
+}
+
+// Inverse of the CSS projection. The map plane is rotateX(θ) about the viewport
+// center, then perspective P is applied from that same center. A plane point at
+// (dx, dy) from center lands on screen at:
+//   sx = dx · k,   sy = dy·cosθ · k,   k = P / (P − dy·sinθ)
+// Solving the second for dy, then dividing sx by k, recovers the plane point
+// under any screen point — independent of the current pan/zoom, which are
+// applied *inside* the plane and undone separately in planeToImage().
+function screenToPlane(clientX, clientY, rect) {
+  const m = state.map, P = m.perspective, th = CONFIG.campus.mapTiltDeg * Math.PI / 180;
+  const sx = clientX - (rect.left + rect.width / 2);
+  const sy = clientY - (rect.top + rect.height / 2);
+  const dy = (sy * P) / (P * Math.cos(th) + sy * Math.sin(th));
+  const k = P / (P - dy * Math.sin(th));
+  const dx = sx / k;
+  return { x: rect.width / 2 + dx, y: rect.height / 2 + dy };
+}
+
+// plane coords → image pixel coords (undo pan + zoom)
+function planeToImage(p) {
+  const m = state.map;
+  return { u: (p.x - m.tx) / m.scale, v: (p.y - m.ty) / m.scale };
+}
+
+function zoomMapAbout(anchorBefore, newScale, anchorAfter) {
+  const m = state.map;
+  const s1 = clamp(newScale, m.minScale, m.maxScale);
+  const { u, v } = planeToImage(anchorBefore);
+  m.scale = s1;
+  m.tx = anchorAfter.x - u * s1;
+  m.ty = anchorAfter.y - v * s1;
+}
+
+function bindMapPointer(viewport) {
+  const m = state.map, pointers = m.pointers;
+  pointers.clear();
+
+  viewport.addEventListener("pointerdown", e => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (e.target.closest(".dev-panel")) return;
+    viewport.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 1) m.gesture = { startX: e.clientX, startY: e.clientY, moved: false, target: e.target };
+    viewport.classList.add("dragging");
+  });
+
+  viewport.addEventListener("pointermove", e => {
+    if (!pointers.has(e.pointerId) || m.imageStatus !== "ready") return;
+    const rect = viewport.getBoundingClientRect();
+    const prev = pointers.get(e.pointerId), cur = { x: e.clientX, y: e.clientY };
+    if (m.gesture && Math.hypot(cur.x - m.gesture.startX, cur.y - m.gesture.startY) > 8) m.gesture.moved = true;
+    if (pointers.size === 1) {
+      // move so the plane point under the finger follows the finger
+      const a = screenToPlane(prev.x, prev.y, rect), b = screenToPlane(cur.x, cur.y, rect);
+      m.tx += b.x - a.x; m.ty += b.y - a.y;
+    } else if (pointers.size === 2) {
+      const ids = Array.from(pointers.keys());
+      const other = pointers.get(ids[0] === e.pointerId ? ids[1] : ids[0]);
+      const p0 = screenToPlane(prev.x, prev.y, rect), p1 = screenToPlane(cur.x, cur.y, rect), o = screenToPlane(other.x, other.y, rect);
+      const d0 = Math.hypot(p0.x - o.x, p0.y - o.y) || 1, d1 = Math.hypot(p1.x - o.x, p1.y - o.y) || 1;
+      zoomMapAbout({ x: (p0.x + o.x) / 2, y: (p0.y + o.y) / 2 }, m.scale * (d1 / d0), { x: (p1.x + o.x) / 2, y: (p1.y + o.y) / 2 });
+      if (m.gesture) m.gesture.moved = true;
+    }
+    pointers.set(e.pointerId, cur);
+    applyMapTransform();
+  });
+
+  const end = e => {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.delete(e.pointerId);
+    if (pointers.size === 0) {
+      viewport.classList.remove("dragging");
+      const g = m.gesture; m.gesture = null;
+      if (g && !g.moved && e.type === "pointerup") handleMapTap(g.target, e.clientX, e.clientY, viewport);
+    }
+  };
+  viewport.addEventListener("pointerup", end);
+  viewport.addEventListener("pointercancel", end);
+
+  viewport.addEventListener("wheel", e => {
+    if (m.imageStatus !== "ready") return;
+    e.preventDefault();
+    const p = screenToPlane(e.clientX, e.clientY, viewport.getBoundingClientRect());
+    const factor = Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0015));
+    zoomMapAbout(p, m.scale * factor, p);
+    applyMapTransform();
+  }, { passive: false });
+
+  viewport.addEventListener("dblclick", e => {
+    if (m.imageStatus !== "ready" || e.target.closest(".pin")) return;
+    const p = screenToPlane(e.clientX, e.clientY, viewport.getBoundingClientRect());
+    zoomMapAbout(p, m.scale * 1.6, p);
+    applyMapTransform();
+  });
+}
+
+function handleMapTap(target, clientX, clientY, viewport) {
+  const pin = target && target.closest ? target.closest(".pin") : null;
+  if (devPinEnabled()) {
+    if (pin) devSelectBuilding(pin.dataset.code); else devPlaceAt(clientX, clientY, viewport);
+    return;
+  }
+  if (pin) navigate(`/building/${pin.dataset.code}`);
+}
+
+/* ---------------------------------------------------------------- BUILDING */
+function floorShort(name) {
+  if (/basement/i.test(name)) return "B";
+  if (/ground|lobby/i.test(name)) return "G";
+  const n = name.match(/\d+/); if (n) return n[0];
+  const words = { first: "1", second: "2", third: "3", fourth: "4", fifth: "5", sixth: "6", seventh: "7", eighth: "8", ninth: "9" };
+  const w = name.toLowerCase().match(/first|second|third|fourth|fifth|sixth|seventh|eighth|ninth/);
+  return w ? words[w[0]] : name.slice(0, 1).toUpperCase();
+}
+
+function renderBuildingView(root, code) {
+  if (state.status !== "ready") {
+    root.innerHTML = `<section class="view"><a class="back" href="#/map">← Map</a><div class="skel" style="height:36px;width:60%;margin-bottom:10px"></div><div class="skel" style="height:18px;width:40%;margin-bottom:28px"></div><div class="building-layout"><div class="skel" style="height:280px"></div><div>${'<div class="skel skel-row"></div>'.repeat(4)}</div></div></section>`;
+    return;
+  }
+  const b = getBuildingByCode(code);
+  if (!b) return renderNotFound(root);
+  if (state.building.code !== b.code) state.building = { code: b.code, activeFloorId: null, expandedFloorId: null };
+
+  const floors = floorsOf(b.id);
+  const n = floors.length;
+  const ratedTotal = bathroomsInBuilding(b.id).filter(r => votesOf(r.id).length).length;
+
+  const slabs = floors.map((f, i) => `
+    <div class="slab ${f.id === state.building.activeFloorId ? "active" : ""}" data-floor="${esc(f.id)}" style="--i:${i}">
+      <div class="slab-side"></div>
+      <div class="slab-face" role="button" tabindex="0" aria-label="${esc(f.name)}"></div>
+      <span class="slab-tag"><b>${esc(floorShort(f.name))}</b>${esc(f.name)}</span>
+    </div>`).join("");
+
+  // list top-to-bottom so it matches the stack visually
+  const rows = floors.slice().reverse().map((f, i) => {
+    const rooms = bathroomsOf(f.id);
+    const rated = rooms.filter(r => votesOf(r.id).length).length;
+    const expanded = f.id === state.building.expandedFloorId;
+    return `<li class="floor-row ${f.id === state.building.activeFloorId ? "active" : ""} ${expanded ? "expanded" : ""}" data-floor="${esc(f.id)}" style="--i:${i}">
+      <button class="floor-row-btn" type="button" aria-expanded="${expanded}">
+        <span class="floor-num">${esc(floorShort(f.name))}</span>
+        <span class="floor-info"><span class="floor-name">${esc(f.name)}</span><span class="floor-meta">${rooms.length} bathroom${rooms.length === 1 ? "" : "s"} · ${rated} rated</span></span>
+        <span class="chev">›</span>
+      </button>
+      <div class="floor-bathrooms" ${expanded ? "" : "hidden"}>${expanded ? bathroomCards(rooms) : ""}</div>
+    </li>`;
+  }).join("");
+
+  root.innerHTML = `
+  <section class="view building-view">
+    <a class="back" href="#/map">← Map</a>
+    <header class="view-head"><p class="crumb">${esc(b.code)}</p><h1>${esc(b.name)}</h1><p class="sub">${n} floor${n === 1 ? "" : "s"} · ${ratedTotal} rated bathroom${ratedTotal === 1 ? "" : "s"}</p></header>
+    <div class="building-layout">
+      <div class="stack-wrap">${n ? `<div class="stack" id="stack" style="--n:${n}">${slabs}</div>` : `<div class="empty"><b>No floors yet</b>This building has no approved floors.</div>`}</div>
+      <ul class="floor-list" id="floorList">${rows}</ul>
+    </div>
+  </section>`;
+
+  // two frames so the collapsed state paints first, then the stagger plays
+  const stack = root.querySelector("#stack");
+  if (stack) requestAnimationFrame(() => requestAnimationFrame(() => stack.classList.add("open")));
+
+  const setActive = id => {
+    state.building.activeFloorId = id;
+    root.querySelectorAll("[data-floor]").forEach(el => el.classList.toggle("active", el.dataset.floor === id));
+  };
+  const toggleExpanded = id => {
+    state.building.expandedFloorId = state.building.expandedFloorId === id ? null : id;
+    root.querySelectorAll(".floor-row").forEach(row => {
+      const open = row.dataset.floor === state.building.expandedFloorId;
+      row.classList.toggle("expanded", open);
+      row.querySelector(".floor-row-btn").setAttribute("aria-expanded", open);
+      const panel = row.querySelector(".floor-bathrooms");
+      panel.hidden = !open;
+      if (open && !panel.innerHTML) panel.innerHTML = bathroomCards(bathroomsOf(row.dataset.floor));
+    });
+    setActive(id);
+  };
+
+  root.querySelectorAll(".floor-row").forEach(row => {
+    row.querySelector(".floor-row-btn").addEventListener("click", () => toggleExpanded(row.dataset.floor));
+    row.addEventListener("mouseenter", () => setActive(row.dataset.floor));
+    row.addEventListener("mouseleave", () => setActive(state.building.expandedFloorId));
+  });
+  root.querySelectorAll(".slab").forEach(slab => {
+    const pick = () => {
+      toggleExpanded(slab.dataset.floor);
+      const row = root.querySelector(`.floor-row[data-floor="${slab.dataset.floor}"]`);
+      if (row && window.innerWidth < 780) row.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+    slab.querySelector(".slab-face").addEventListener("click", pick);
+    slab.querySelector(".slab-tag").addEventListener("click", pick);
+    slab.querySelector(".slab-face").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+    slab.addEventListener("mouseenter", () => setActive(slab.dataset.floor));
+    slab.addEventListener("mouseleave", () => setActive(state.building.expandedFloorId));
+  });
+}
+
+function bathroomCards(rooms) {
+  if (!rooms.length) return `<div class="empty" style="grid-column:1/-1"><b>No bathrooms listed</b>Know one? <a href="#/submit">Submit it</a>.</div>`;
+  return rooms.map((r, i) => {
+    const s = summarizeVotes(votesOf(r.id));
+    return `<a class="bath-card" href="#/bathroom/${esc(r.id)}" style="--i:${i}">
+      <span class="bath-label">${esc(r.label)}</span>
+      ${s.avg == null ? `<span class="bath-score none">No ratings yet</span>` : `<span class="bath-score">${fmtScore(s.avg)}<small>/ 5</small></span>`}
+      <span class="bath-votes">${s.count ? `${s.count} vote${s.count === 1 ? "" : "s"}` : "Be the first to rate"}</span>
+    </a>`;
+  }).join("");
+}
+
+/* ---------------------------------------------------------------- BATHROOM */
+async function loadBathroomDetail(id) {
+  state.bathroom = { id, status: "loading", votes: [], myVote: null, error: null };
+  render();
+  try {
+    const period = currentPeriod();
+    let myVote = readLocalVote(id, period);
+    let votes = [];
+    if (db) {
+      votes = await fetchBathroomVotes(id);
+      const email = readSavedEmail();
+      if (email && window.crypto && crypto.subtle) {
+        const mine = await fetchMyVote(id, await hashEmail(email), period);
+        if (mine) { myVote = mine; writeLocalVote(id, period, mine); }
+      }
+    }
+    if (state.bathroom.id !== id) return; // user navigated away mid-fetch
+    Object.assign(state.bathroom, { status: "ready", votes, myVote });
+  } catch (err) {
+    console.error(err);
+    if (state.bathroom.id !== id) return;
+    Object.assign(state.bathroom, { status: "error", error: describeError(err) });
+  }
+  render();
+}
+
+function renderBathroomView(root, id) {
+  if (state.status !== "ready") {
+    root.innerHTML = `<section class="view view-narrow"><a class="back" href="#/map">← Map</a><div class="skel" style="height:36px;width:50%;margin-bottom:20px"></div><div class="skel" style="height:120px;margin-bottom:14px"></div><div class="skel" style="height:180px"></div></section>`;
+    return;
+  }
+  const r = getBathroom(id);
+  if (!r) return renderNotFound(root);
+  const building = getBuilding(r.building_id), floor = getFloor(r.floor_id);
+  if (state.bathroom.id !== id) { loadBathroomDetail(id); return; }
+
+  const d = state.bathroom;
+  const summary = summarizeVotes(votesOf(r.id));
+  const thisMonth = votesOf(r.id, currentPeriod()).length;
+  const period = currentPeriod();
+  const nextStart = nextPeriodStart(period).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+
+  const criteria = CONFIG.criteria.map(c => {
+    const v = summary.criteria[c.key];
+    return `<div class="crit"><b>${esc(c.label)}</b><div class="bar"><i data-w="${v == null ? 0 : (v / 5 * 100).toFixed(1)}"></i></div><span class="val">${v == null ? "–" : fmtScore(v)}</span></div>`;
+  }).join("");
+
+  let cta;
+  if (d.myVote) {
+    const mv = d.myVote;
+    cta = `<div class="notice my-vote"><b>You rated this ${fmtScore(voteOverall(mv))} this month</b>
+      <div class="my-vote-grid">${CONFIG.criteria.map(c => `<span>${esc(c.label)} ${starsStatic(mv[c.key])}</span>`).join("")}</div>
+      <span class="sub" style="font-size:13px">One vote per bathroom per month. You can rate it again on ${esc(nextStart)}.</span></div>`;
+  } else if (state.demo) {
+    cta = `<div class="notice">Rating is disabled in demo mode. Add your Supabase keys to <code>CONFIG</code> to enable it.</div>`;
+  } else {
+    cta = `<button class="btn btn-primary btn-block" type="button" id="rateBtn" ${state.online ? "" : "disabled"}>Rate this bathroom</button>`;
+  }
+
+  let reviews;
+  if (d.status === "loading") reviews = `<div class="skel skel-row"></div><div class="skel skel-row"></div>`;
+  else if (d.status === "error") reviews = `<div class="error-box"><p>${esc(d.error)}</p><button class="btn btn-primary" type="button" id="reviewRetry">Retry</button></div>`;
+  else if (!d.votes.length) reviews = `<div class="empty"><b>No reviews yet</b>${state.demo ? "Reviews show up here once the database is connected." : "Be the first to rate this one."}</div>`;
+  else reviews = `<div class="reviews">${d.votes.map((v, i) => reviewCard(v, i)).join("")}</div>`;
+
+  root.innerHTML = `
+  <section class="view view-narrow bath-view">
+    <a class="back" href="#/building/${esc(building ? building.code : "")}">← ${esc(building ? building.name : "Building")}</a>
+    <header class="view-head"><p class="crumb">${esc(building ? building.code : "")} · ${esc(floor ? floor.name : "")}</p><h1>${esc(r.label)}</h1></header>
+    <div class="card score-hero">
+      ${summary.avg == null ? `<div class="score-big none">Unrated</div>` : `<div class="score-big">${fmtScore(summary.avg)}</div>`}
+      <div class="score-side">${starsStatic(summary.avg || 0)}<span class="sub" style="margin:0">${summary.count} rating${summary.count === 1 ? "" : "s"} all time · ${thisMonth} this month</span></div>
+    </div>
+    <div class="card criteria">${criteria}</div>
+    <div class="rate-cta">${cta}</div>
+    <div class="section-title"><h2>Reviews</h2><span>newest first</span></div>
+    ${reviews}
+  </section>`;
+
+  requestAnimationFrame(() => root.querySelectorAll(".bar i").forEach(i => { i.style.width = i.dataset.w + "%"; }));
+  const rateBtn = root.querySelector("#rateBtn");
+  if (rateBtn) rateBtn.addEventListener("click", () => openRatingModal(r));
+  const retry = root.querySelector("#reviewRetry");
+  if (retry) retry.addEventListener("click", () => loadBathroomDetail(id));
+}
+
+function reviewCard(v, i) {
+  return `<article class="card review" style="--i:${i}">
+    <div class="review-head"><span class="review-score">${starsStatic(voteOverall(v))} ${fmtScore(voteOverall(v))}</span><time class="review-time" datetime="${esc(v.created_at)}">${esc(relativeTime(v.created_at))}</time></div>
+    ${v.review_text ? `<p class="review-text">${esc(v.review_text)}</p>` : ""}
+    ${v.photo_url ? `<img class="review-photo" src="${esc(v.photo_url)}" alt="Photo submitted with this review" loading="lazy">` : ""}
+    <div class="review-crit">${CONFIG.criteria.map(c => `<span class="pill">${esc(c.label)} ${v[c.key]}</span>`).join("")}</div>
+  </article>`;
+}
+
+/* ---------------------------------------------------------------- LEADERBOARD */
+function renderLeaderboardView(root) {
+  if (state.status !== "ready") {
+    root.innerHTML = `<section class="view view-narrow"><header class="view-head"><h1>Leaderboard</h1><p class="sub">Loading this month's rankings…</p></header>${'<div class="skel skel-row"></div>'.repeat(6)}</section>`;
+    return;
+  }
+  const now = currentPeriod();
+  const periods = Array.from(new Set([now, ...listPeriods(state.votes)])).sort().reverse();
+  if (!state.leaderboard.period || !periods.includes(state.leaderboard.period)) state.leaderboard.period = now;
+  const period = state.leaderboard.period;
+  const ranked = rankBathrooms(state.votes, state.bathrooms, period);
+
+  const options = periods.map(p => `<option value="${p}" ${p === period ? "selected" : ""}>${esc(periodLabel(p))}${p === now ? " (current)" : ""}</option>`).join("");
+  const rows = ranked.map((e, i) => {
+    const b = getBuilding(e.bathroom.building_id), f = getFloor(e.bathroom.floor_id);
+    return `<li><a class="card lb-row ${i < 3 ? "top-" + (i + 1) : ""}" href="#/bathroom/${esc(e.bathroom.id)}" style="--i:${i}">
+      <span class="lb-rank">${i + 1}</span>
+      <span><span class="lb-name">${esc(e.bathroom.label)}</span><span class="lb-where">${esc(b ? b.code : "")} · ${esc(f ? f.name : "")}</span></span>
+      <span class="lb-score"><b>${fmtScore(e.avg)}</b><span>${e.count} vote${e.count === 1 ? "" : "s"}</span></span>
+    </a></li>`;
+  }).join("");
+
+  root.innerHTML = `
+  <section class="view view-narrow">
+    <header class="view-head"><h1>Leaderboard</h1><p class="sub">Ranked by a weighted score so a handful of perfect votes can't leapfrog a consistently great bathroom. The contest resets on the 1st of every month.</p></header>
+    <div class="lb-controls">
+      <label><span class="sr-only">Month</span><select id="lbPeriod">${options}</select></label>
+      <span class="lb-note">${ranked.length} ranked · ${state.votes.filter(v => v.period === period).length} votes</span>
+    </div>
+    ${ranked.length ? `<ol class="lb-list">${rows}</ol>` : `<div class="empty"><b>No votes ${period === now ? "yet this month" : "for " + esc(periodLabel(period))}</b>${period === now ? `Find a bathroom on the <a href="#/map">map</a> and rate it.` : "This month came and went in silence."}</div>`}
+  </section>`;
+
+  root.querySelector("#lbPeriod").addEventListener("change", e => { state.leaderboard.period = e.target.value; render(); });
+}
+
+/* ---------------------------------------------------------------- SUBMIT */
+function renderSubmitView(root) {
+  if (state.status !== "ready") {
+    root.innerHTML = `<section class="view view-form"><header class="view-head"><h1>Submit a bathroom</h1></header><div class="skel" style="height:420px"></div></section>`;
+    return;
+  }
+  if (state.submit.done) {
+    root.innerHTML = `<section class="view view-form"><div class="card submit-done"><span class="big">🧻</span><h2>Thanks — it's in the review queue</h2><p class="sub">New bathrooms are checked by a human before they show up. Once approved it'll appear on its building's floor.</p><a class="btn btn-primary" href="#/map" id="submitAnother">Back to the map</a><button class="btn btn-ghost" type="button" id="submitMore">Submit another</button></div></section>`;
+    root.querySelector("#submitMore").addEventListener("click", () => { state.submit.done = false; render(); });
+    return;
+  }
+  const buildings = state.buildings.slice().sort((a, b) => a.code.localeCompare(b.code));
+  root.innerHTML = `
+  <section class="view view-form">
+    <header class="view-head"><h1>Submit a bathroom</h1><p class="sub">Missing one? Tell us where it is. Submissions are reviewed before they go live.</p></header>
+    <form class="card submit-form" id="submitForm" novalidate>
+      <label class="field"><span class="field-label">Building</span>
+        <select name="building_id" id="submitBuilding" required><option value="">Choose a building…</option>${buildings.map(b => `<option value="${esc(b.id)}">${esc(b.code)} — ${esc(b.name)}</option>`).join("")}</select></label>
+      <label class="field"><span class="field-label">Floor</span>
+        <select name="floor_id" id="submitFloor" required disabled><option value="">Pick a building first</option></select></label>
+      <label class="field"><span class="field-label">Label</span>
+        <input type="text" name="label" maxlength="60" placeholder="e.g. Men's, Women's, Gender Neutral (east wing)" required></label>
+      <label class="field"><span class="field-label">Note <em>optional</em></span>
+        <textarea name="note" maxlength="300" rows="2" placeholder="How to find it, anything the reviewer should know"></textarea></label>
+      ${photoPickerTemplate("submitPhoto")}
+      <label class="field"><span class="field-label">${esc(CONFIG.campus.emailDomain)} email</span>
+        <input type="email" name="email" inputmode="email" autocomplete="email" placeholder="you@${esc(CONFIG.campus.emailDomain)}" value="${esc(readSavedEmail())}" required>
+        <span class="field-help">We store a one-way hash of your address, never the address itself.</span></label>
+      <p class="form-error" id="submitError" hidden></p>
+      <button class="btn btn-primary btn-block" type="submit" id="submitBtn" ${state.demo ? "disabled" : ""}>${state.demo ? "Submissions need Supabase configured" : "Send for review"}</button>
+    </form>
+  </section>`;
+
+  const buildingSel = root.querySelector("#submitBuilding"), floorSel = root.querySelector("#submitFloor");
+  buildingSel.addEventListener("change", () => {
+    const floors = floorsOf(buildingSel.value);
+    floorSel.disabled = !floors.length;
+    floorSel.innerHTML = floors.length
+      ? `<option value="">Choose a floor…</option>` + floors.map(f => `<option value="${esc(f.id)}">${esc(f.name)}</option>`).join("")
+      : `<option value="">No floors for this building</option>`;
+  });
+  const photo = bindPhotoPicker(root.querySelector("#submitPhoto"));
+  root.querySelector("#submitForm").addEventListener("submit", e => { e.preventDefault(); submitBathroom(e.target, photo); });
+}
+
+async function submitBathroom(form, photo) {
+  const errEl = form.querySelector("#submitError"), btn = form.querySelector("#submitBtn");
+  const showError = msg => { errEl.textContent = msg; errEl.hidden = false; };
+  errEl.hidden = true;
+  const fd = new FormData(form);
+  const label = String(fd.get("label") || "").trim();
+  const email = normalizeEmail(fd.get("email"));
+  if (!fd.get("building_id")) return showError("Pick a building.");
+  if (!fd.get("floor_id")) return showError("Pick a floor.");
+  if (label.length < 2) return showError("Give the bathroom a label.");
+  if (!isValidSchoolEmail(email)) return showError(`Enter a valid @${CONFIG.campus.emailDomain} address.`);
+  if (!state.online) return showError("You're offline. Try again once you reconnect.");
+
+  btn.disabled = true; btn.textContent = "Sending…";
+  try {
+    const submitted_by_hash = await hashEmail(email);
+    let photo_url = null;
+    if (photo.getFile()) { photo.setStatus("Uploading photo…"); photo_url = await uploadPhoto(photo.getFile()); photo.setStatus("Photo uploaded", true); }
+    await insertBathroom({
+      school_id: state.school.id, building_id: fd.get("building_id"), floor_id: fd.get("floor_id"),
+      label, note: String(fd.get("note") || "").trim() || null, photo_url, submitted_by_hash
+    });
+    saveEmail(email);
+    state.submit.done = true;
+    toast("Submitted for review", "ok");
+    render();
+  } catch (err) {
+    console.error(err);
+    photo.setStatus(null);
+    showError(err && err.code === "23505" ? "That bathroom already exists or is already waiting for review." : describeError(err));
+    btn.disabled = false; btn.textContent = "Send for review";
+  }
+}
+
+/* =====================================================================
+   COMPONENTS
+   Reusable pieces: modal, rating form, photo picker, toast, formatters.
+   ===================================================================== */
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
+function fmtScore(n) { return n == null ? "–" : (Math.round(n * 10) / 10).toFixed(1); }
+
+function starsStatic(score) {
+  const full = Math.round(score || 0);
+  return `<span class="stars-static" aria-label="${fmtScore(score)} out of 5">${"★".repeat(full)}<span class="off">${"★".repeat(5 - full)}</span></span>`;
+}
+
+function relativeTime(iso) {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+  if (diff < 60) return "just now";
+  if (diff < 3600) return rtf.format(-Math.round(diff / 60), "minute");
+  if (diff < 86400) return rtf.format(-Math.round(diff / 3600), "hour");
+  if (diff < 86400 * 30) return rtf.format(-Math.round(diff / 86400), "day");
+  if (diff < 86400 * 365) return rtf.format(-Math.round(diff / (86400 * 30)), "month");
+  return rtf.format(-Math.round(diff / (86400 * 365)), "year");
+}
+
+function toast(message, kind) {
+  const root = document.getElementById("toastRoot");
+  const el = document.createElement("div");
+  el.className = "toast" + (kind ? ` toast-${kind}` : "");
+  el.textContent = message;
+  root.appendChild(el);
+  setTimeout(() => { el.classList.add("leaving"); setTimeout(() => el.remove(), 300); }, 2600);
+}
+
+function openModal(html) {
+  closeModal();
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `<div class="modal-root" id="modalOverlay"><div class="modal-sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  state.modal = "open";
+  document.body.style.overflow = "hidden";
+  root.querySelector("#modalOverlay").addEventListener("click", e => { if (e.target.id === "modalOverlay") closeModal(); });
+  root.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", closeModal));
+  return root.querySelector(".modal-sheet");
+}
+function closeModal() {
+  document.getElementById("modalRoot").innerHTML = "";
+  document.body.style.overflow = "";
+  state.modal = null;
+}
+
+function starInputTemplate(c) {
+  return `<fieldset class="stars" data-key="${esc(c.key)}">
+    <legend>${esc(c.label)}<span class="stars-hint">${esc(c.hint)}</span></legend>
+    <div class="star-row">${[1,2,3,4,5].map(n => `<label aria-label="${n} star${n > 1 ? "s" : ""}"><input type="radio" name="${esc(c.key)}" value="${n}" required>★</label>`).join("")}</div>
+  </fieldset>`;
+}
+
+function bindStarInputs(root) {
+  root.querySelectorAll(".star-row").forEach(row => {
+    row.addEventListener("change", () => {
+      const val = Number(row.querySelector("input:checked")?.value || 0);
+      row.querySelectorAll("label").forEach((l, i) => l.classList.toggle("on", i < val));
+    });
+  });
+}
+
+function photoPickerTemplate(id) {
+  return `<div class="photo-field" id="${id}">
+    <span class="field-label">Photo <em>optional · up to 5 MB</em></span>
+    <div class="photo-drop"><input type="file" accept="image/*" id="${id}Input" hidden><label for="${id}Input" class="btn btn-ghost">Add a photo</label></div>
+    <div class="photo-preview" hidden><img alt="Selected photo preview"><button type="button" class="icon-btn" data-remove aria-label="Remove photo">×</button></div>
+    <div class="photo-status" hidden><div class="progress"><i></i></div><span></span></div>
+    <p class="form-error" hidden></p>
+  </div>`;
+}
+
+// Returns a small controller: getFile(), setStatus(text, done), clear()
+function bindPhotoPicker(el) {
+  const input = el.querySelector("input[type=file]"), preview = el.querySelector(".photo-preview"), img = preview.querySelector("img");
+  const status = el.querySelector(".photo-status"), err = el.querySelector(".form-error");
+  let file = null, url = null;
+  const clear = () => { file = null; if (url) URL.revokeObjectURL(url); url = null; input.value = ""; preview.hidden = true; status.hidden = true; };
+  input.addEventListener("change", () => {
+    err.hidden = true;
+    const f = input.files && input.files[0];
+    if (!f) return clear();
+    if (!f.type.startsWith("image/")) { clear(); err.textContent = "Images only, please."; err.hidden = false; return; }
+    if (f.size > CONFIG.PHOTO_MAX_BYTES) { clear(); err.textContent = "That photo is over 5 MB. Pick a smaller one."; err.hidden = false; return; }
+    file = f; url = URL.createObjectURL(f); img.src = url; preview.hidden = false;
+  });
+  preview.querySelector("[data-remove]").addEventListener("click", clear);
+  return {
+    getFile: () => file,
+    setStatus(text, done) {
+      if (!text) { status.hidden = true; return; }
+      status.hidden = false; status.querySelector("span").textContent = text;
+      status.querySelector(".progress").classList.toggle("done", !!done);
+    },
+    clear
+  };
+}
+
+/* ---- rating flow ---- */
+function openRatingModal(bathroom) {
+  const building = getBuilding(bathroom.building_id), floor = getFloor(bathroom.floor_id);
+  const max = CONFIG.REVIEW_MAX_CHARS;
+  const sheet = openModal(`
+    <form id="rateForm" novalidate>
+      <header class="modal-head"><div><p class="crumb">${esc(building ? building.code : "")} · ${esc(floor ? floor.name : "")}</p><h2>Rate ${esc(bathroom.label)}</h2></div><button type="button" class="icon-btn" data-close aria-label="Close">×</button></header>
+      ${CONFIG.criteria.map(starInputTemplate).join("")}
+      <label class="field" style="margin-top:8px"><span class="field-label">Review <em>optional</em></span>
+        <textarea name="review_text" maxlength="${max}" rows="3" placeholder="What should people know before they go?"></textarea>
+        <span class="counter"><b id="reviewCount">0</b>/${max}</span></label>
+      ${photoPickerTemplate("ratePhoto")}
+      <label class="field"><span class="field-label">${esc(CONFIG.campus.emailDomain)} email</span>
+        <input type="email" name="email" inputmode="email" autocomplete="email" placeholder="you@${esc(CONFIG.campus.emailDomain)}" value="${esc(readSavedEmail())}" required>
+        <span class="field-help">Keeps it to one vote per person per month. We store a one-way hash, never the address.</span></label>
+      <p class="form-error" id="rateError" hidden></p>
+      <button class="btn btn-primary btn-block" type="submit" id="rateSubmit">Submit rating</button>
+    </form>`);
+  bindStarInputs(sheet);
+  const ta = sheet.querySelector("textarea"), counter = sheet.querySelector("#reviewCount");
+  ta.addEventListener("input", () => { counter.textContent = ta.value.length; counter.parentElement.classList.toggle("near", ta.value.length > max - 40); });
+  const photo = bindPhotoPicker(sheet.querySelector("#ratePhoto"));
+  sheet.querySelector("#rateForm").addEventListener("submit", e => { e.preventDefault(); submitRating(e.target, bathroom, photo); });
+}
+
+async function submitRating(form, bathroom, photo) {
+  const errEl = form.querySelector("#rateError"), btn = form.querySelector("#rateSubmit");
+  const showError = msg => { errEl.textContent = msg; errEl.hidden = false; errEl.scrollIntoView({ block: "nearest" }); };
+  errEl.hidden = true;
+  const fd = new FormData(form);
+  const scores = {};
+  for (const c of CONFIG.criteria) {
+    const v = Number(fd.get(c.key));
+    if (!(v >= 1 && v <= 5)) return showError(`Give ${c.label} a star rating.`);
+    scores[c.key] = v;
+  }
+  const review_text = String(fd.get("review_text") || "").trim().slice(0, CONFIG.REVIEW_MAX_CHARS) || null;
+  const email = normalizeEmail(fd.get("email"));
+  if (!isValidSchoolEmail(email)) return showError(`Enter a valid @${CONFIG.campus.emailDomain} address.`);
+  if (!state.online) return showError("You're offline. Try again once you reconnect.");
+
+  const period = currentPeriod();
+  const existing = readLocalVote(bathroom.id, period);
+  if (existing) { state.bathroom.myVote = existing; closeModal(); render(); toast("You already rated this one this month"); return; }
+
+  btn.disabled = true; btn.textContent = "Submitting…";
+  try {
+    const voter_hash = await hashEmail(email);
+    let photo_url = null;
+    if (photo.getFile()) { photo.setStatus("Uploading photo…"); photo_url = await uploadPhoto(photo.getFile()); photo.setStatus("Photo uploaded", true); }
+    const row = await insertVote({ school_id: state.school.id, bathroom_id: bathroom.id, voter_hash, ...scores, review_text, photo_url });
+    saveEmail(email);
+    writeLocalVote(bathroom.id, row.period, row);
+    state.votes.unshift(row);
+    if (state.bathroom.id === bathroom.id) { state.bathroom.votes.unshift(row); state.bathroom.myVote = row; }
+    closeModal();
+    render();
+    toast("Thanks — rating submitted", "ok");
+  } catch (err) {
+    console.error(err);
+    photo.setStatus(null);
+    if (err && err.code === "23505") {
+      // unique (bathroom_id, voter_hash, period): this person already voted this month
+      try {
+        const mine = await fetchMyVote(bathroom.id, await hashEmail(email), period);
+        if (mine) { writeLocalVote(bathroom.id, period, mine); if (state.bathroom.id === bathroom.id) state.bathroom.myVote = mine; }
+      } catch { /* fall through to the message */ }
+      saveEmail(email);
+      closeModal(); render();
+      toast("You already rated this bathroom this month — try again next month");
+      return;
+    }
+    showError(describeError(err));
+    btn.disabled = false; btn.textContent = "Submit rating";
+  }
+}
+
+/* =====================================================================
+   DEV TOOLS
+   Click-to-place pins. Entirely inert unless CONFIG.DEV_PIN_MODE === true.
+   ===================================================================== */
+function devPinEnabled() { return CONFIG.DEV_PIN_MODE === true; }
+
+function devBuildingList() {
+  return state.buildings.length ? state.buildings : CONFIG.campus.buildings.map(b => ({ ...b, id: "cfg-" + b.code }));
+}
+
+function mountDevPanel(view) {
+  if (!devPinEnabled() || view.querySelector("#devPanel")) return;
+  const panel = document.createElement("aside");
+  panel.className = "dev-panel"; panel.id = "devPanel";
+  view.appendChild(panel);
+  renderDevPanel();
+}
+
+function renderDevPanel() {
+  const panel = document.getElementById("devPanel");
+  if (!panel || !devPinEnabled()) return;
+  const list = devBuildingList();
+  state.dev.index = clamp(state.dev.index, 0, Math.max(0, list.length - 1));
+  const current = list[state.dev.index];
+  const placedCount = list.filter(b => state.dev.placed[b.code]).length;
+  panel.innerHTML = `
+    <div class="dev-head"><span>Pin placer</span><span>${placedCount}/${list.length} placed</span></div>
+    <select id="devSelect">${list.map((b, i) => `<option value="${i}" ${i === state.dev.index ? "selected" : ""}>${state.dev.placed[b.code] ? "✓ " : "· "}${esc(b.code)} — ${esc(b.name)}</option>`).join("")}</select>
+    <p class="dev-tip">Tap the map where <b>${current ? esc(current.code) : "…"}</b> goes. The config line is logged and copied; the panel auto-advances.</p>
+    <div class="dev-actions"><button type="button" id="devCopyAll">Copy all</button><button type="button" class="secondary" id="devSkip">Skip</button></div>`;
+  panel.querySelector("#devSelect").addEventListener("change", e => { state.dev.index = Number(e.target.value); renderDevPanel(); devHighlight(); });
+  panel.querySelector("#devCopyAll").addEventListener("click", devCopyAll);
+  panel.querySelector("#devSkip").addEventListener("click", () => { devAdvance(); renderDevPanel(); devHighlight(); });
+  devHighlight();
+}
+
+function devHighlight() {
+  const current = devBuildingList()[state.dev.index];
+  document.querySelectorAll(".pin").forEach(p => p.classList.toggle("dev-current", !!current && p.dataset.code === current.code));
+}
+
+function devSelectBuilding(code) {
+  const i = devBuildingList().findIndex(b => b.code === code);
+  if (i < 0) return;
+  state.dev.index = i;
+  renderDevPanel();
+  toast(`Selected ${code} — tap where it goes`);
+}
+
+function devAdvance() {
+  const list = devBuildingList();
+  for (let step = 1; step <= list.length; step++) {
+    const i = (state.dev.index + step) % list.length;
+    if (!state.dev.placed[list[i].code]) { state.dev.index = i; return; }
+  }
+}
+
+// Screen → tilted plane → image pixels → percent of natural size.
+function devPlaceAt(clientX, clientY, viewport) {
+  if (!devPinEnabled()) return;
+  const m = state.map;
+  if (m.imageStatus !== "ready") { toast("Wait for the map image to load", "error"); return; }
+  const { u, v } = planeToImage(screenToPlane(clientX, clientY, viewport.getBoundingClientRect()));
+  const x = Math.round(u / m.W * 1000) / 10, y = Math.round(v / m.H * 1000) / 10;
+  if (x < 0 || x > 100 || y < 0 || y > 100) { toast("That's off the map", "error"); return; }
+  const b = devBuildingList()[state.dev.index];
+  if (!b) return;
+  state.dev.placed[b.code] = { x, y };
+  const live = state.buildings.find(bb => bb.code === b.code);
+  if (live) { live.x = x; live.y = y; }
+  const pins = document.getElementById("mapPins");
+  if (pins) renderPins(pins);
+  const line = devConfigLine(b, x, y);
+  console.log(line);
+  devAdvance();
+  renderDevPanel();
+  copyText(line).then(ok => toast(`Placed ${b.code} at ${x}, ${y}${ok ? " · line copied" : " · see console"}`, "ok"));
+}
+
+function devConfigLine(b, x, y) {
+  const cfg = CONFIG.campus.buildings.find(c => c.code === b.code);
+  const floors = cfg ? cfg.floors : (b.id ? floorsOf(b.id).length : 0);
+  return `{ code: "${b.code}", name: "${b.name.replace(/"/g, '\\"')}", x: ${x}, y: ${y}, floors: ${floors} },`;
+}
+
+function devCopyAll() {
+  const lines = devBuildingList().map(b => {
+    const p = state.dev.placed[b.code] || { x: b.x, y: b.y };
+    return "  " + devConfigLine(b, p.x, p.y);
+  });
+  const text = `buildings: [\n${lines.join("\n")}\n],`;
+  console.log(text);
+  copyText(text).then(ok => toast(ok ? "Copied the full buildings array" : "Clipboard blocked — array is in the console", "ok"));
+}
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch { return false; } // clipboard needs https + a user gesture
+}
+
+/* =====================================================================
+   INIT
+   ===================================================================== */
+function init() {
+  document.documentElement.style.setProperty("--map-tilt", CONFIG.campus.mapTiltDeg + "deg");
+  document.getElementById("brandName").textContent = CONFIG.campus.appName;
+  document.getElementById("brandMark").textContent = CONFIG.campus.appName.slice(0, 1).toUpperCase();
+  document.title = `${CONFIG.campus.appName} · ${CONFIG.SCHOOL_SLUG.replace(/^\w/, c => c.toUpperCase())}`;
+
+  window.addEventListener("hashchange", handleRouteChange);
+  window.addEventListener("online", () => { state.online = true; renderBanners(); if (state.status === "error") loadCampus(); else render(); });
+  window.addEventListener("offline", () => { state.online = false; renderBanners(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && state.modal) closeModal(); });
+
+  if (!location.hash) navigate("/map", { replace: true });
+  state.route = parseRoute(location.hash);
+  loadCampus();
+}
+
+init();
+</script>
+</body>
+</html>
