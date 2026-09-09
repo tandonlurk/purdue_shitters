@@ -18,9 +18,21 @@ create table if not exists public.buildings (
   school_id  uuid not null references public.schools(id) on delete cascade,
   code       text not null,
   name       text not null,
+  -- pin position as a percentage of the campus map image
+  x          numeric,
+  y          numeric,
+  -- real-world position, so pins can be recomputed against a new map image
+  lat        numeric,
+  lon        numeric,
   created_at timestamptz not null default now(),
   unique (school_id, code)
 );
+
+-- for databases created before these columns existed
+alter table public.buildings add column if not exists x   numeric;
+alter table public.buildings add column if not exists y   numeric;
+alter table public.buildings add column if not exists lat numeric;
+alter table public.buildings add column if not exists lon numeric;
 
 create table if not exists public.floors (
   id          uuid primary key default gen_random_uuid(),

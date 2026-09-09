@@ -44,7 +44,7 @@
   --e-spring: cubic-bezier(.34, 1.45, .4, 1);
   --e-out: cubic-bezier(.2, .7, .2, 1);
 
-  --map-tilt: 14deg;
+  --map-tilt: 18deg;
   --map-perspective: 1400px;
   --header-h: 56px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -155,20 +155,75 @@ p { margin: 0; }
    The tilt element is exactly the viewport size so its transform-origin (its center)
    coincides with the perspective origin — that's what makes the inverse math in
    screenToPlane() tractable. */
+/* ---- home ---- */
+.home { max-width: 900px; }
+.home-hero { text-align: center; padding: 26px 0 30px; }
+.home-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--c-gold-deep); }
+.home-hero h1 { font-size: clamp(34px, 7vw, 54px); line-height: 1.05; margin-top: 10px; }
+.home-hero .sub { font-size: 17px; }
+.home-sect { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--c-muted); margin-bottom: 10px; }
+.metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 640px) { .metric-grid { grid-template-columns: 1fr; } }
+.metric { display: flex; flex-direction: column; gap: 4px; padding: 16px; text-decoration: none; color: inherit; min-height: 150px; animation: rise var(--d-slow) var(--e-out) both; animation-delay: calc(var(--i, 0) * 70ms); transition: transform var(--d-fast) var(--e-spring), box-shadow var(--d-fast); }
+a.metric:hover { transform: translateY(-3px); box-shadow: var(--sh-soft); }
+.metric-label { font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--c-gold-deep); }
+.metric-score { font-size: 32px; font-weight: 800; line-height: 1.1; margin-top: 2px; }
+.metric-score span { font-size: 18px; color: var(--c-gold-deep); margin-left: 2px; }
+.metric-name { font-weight: 700; margin-top: auto; }
+.metric-where { font-size: 13px; color: var(--c-muted); }
+.metric.is-empty { border: 1.5px dashed var(--c-line); box-shadow: none; background: transparent; }
+.metric-none { font-size: 20px; font-weight: 700; color: var(--c-muted); margin-top: 4px; }
+.metric-hint { font-size: 13px; color: var(--c-muted); margin-top: auto; }
+.home-cta { text-align: center; margin-top: 28px; padding-top: 26px; border-top: 1px solid var(--c-line); }
+.btn-lg { padding: 16px 40px; font-size: 17px; }
+.home-cta-sub { color: var(--c-muted); font-size: 14px; margin-top: 12px; }
+.home-links { margin-top: 14px; font-size: 14px; }
+.home-links a { color: var(--c-muted); }
 .map-viewport { position: absolute; inset: 0; overflow: hidden; touch-action: none; perspective: var(--map-perspective); cursor: grab; user-select: none; -webkit-user-select: none; }
 .map-viewport.dragging { cursor: grabbing; }
 .map-tilt { position: absolute; inset: 0; transform: rotateX(var(--map-tilt)); transform-style: preserve-3d; }
 .map-pan { position: absolute; left: 0; top: 0; transform-origin: 0 0; transform-style: preserve-3d; will-change: transform; }
 .map-img { width: 100%; height: 100%; pointer-events: none; border-radius: 6px; box-shadow: 0 30px 70px rgba(0,0,0,.28), 0 2px 0 rgba(0,0,0,.2); background: #fff; }
+.pin.is-minor::before { display: none; }
+.pin.is-minor::after { width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; background: var(--c-white); border-color: var(--c-muted); opacity: .85; }
+.pin.is-minor .pin-body { display: none; }
+.pin.is-minor { cursor: pointer; }
+.map-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.map-tiltctl { display: flex; align-items: center; gap: 8px; background: var(--c-paper); border: 1px solid var(--c-line); border-radius: 999px; padding: 6px 12px; box-shadow: var(--sh-card); pointer-events: auto; }
+.map-tiltctl label { font-size: 13px; line-height: 1; cursor: pointer; }
+.map-tiltctl input { width: 92px; accent-color: var(--c-gold-deep); cursor: pointer; }
 .map-pins { position: absolute; inset: 0; transform-style: preserve-3d; }
 .pin { position: absolute; width: 0; height: 0; transform-style: preserve-3d; }
+/* Gold anchor dot: on a dense real map, this is what actually points at the building. */
+.pin::after { content: ""; position: absolute; left: 0; top: 0; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: var(--c-gold); border: 1.5px solid var(--c-black); transform: scale(var(--pin-k, 1)); }
+.pin-stem { position: absolute; left: 0; bottom: 0; width: 1.5px; margin-left: -0.75px; height: calc(7px + var(--tier, 0) * 26px * var(--pin-k, 1)); background: linear-gradient(to top, rgba(207,185,145,.25), var(--c-gold)); pointer-events: none; }
+.pin-halo { position: absolute; left: 0; top: 0; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%; border: 2px solid var(--c-gold); transform: scale(var(--pin-k, 1)); opacity: 0; animation: pinHalo 2.8s ease-out infinite; animation-delay: calc(var(--i, 0) * 90ms + 700ms); pointer-events: none; }
+@keyframes pinHalo { 0% { opacity: .55; transform: scale(calc(var(--pin-k, 1) * .6)); } 70%, 100% { opacity: 0; transform: scale(calc(var(--pin-k, 1) * 2.6)); } }
 /* flat ellipse lying on the map surface under each pin */
 .pin::before { content: ""; position: absolute; left: 0; top: 0; width: 26px; height: 9px; border-radius: 50%; background: rgba(0,0,0,.28); filter: blur(2px); transform: translate(-50%, -50%) scale(var(--pin-k, 1)); }
 /* counter-rotate by the tilt so the pin stands upright off the tilted plane;
    scale(1/zoom) keeps pins the same screen size while the map zooms. */
-.pin-body { position: absolute; left: 0; bottom: 7px; transform-origin: 50% calc(100% + 7px); transform: translateX(-50%) rotateX(calc(var(--map-tilt) * -1)) scale(var(--pin-k, 1)); display: flex; align-items: center; gap: 6px; padding: 6px 10px 6px 9px; background: var(--c-black); color: var(--c-gold); border-radius: 12px; white-space: nowrap; filter: drop-shadow(0 6px 5px rgba(0,0,0,.35)); cursor: pointer; border: 1.5px solid rgba(207,185,145,.55); transition: background var(--d-fast), color var(--d-fast); }
+.pin-body { position: absolute; left: 0; bottom: calc(7px + var(--tier, 0) * 26px * var(--pin-k, 1)); transform-origin: 50% calc(100% + 7px); transform: translateX(-50%) rotateX(calc(var(--map-tilt) * -1)) scale(var(--pin-k, 1)); display: flex; align-items: center; gap: 6px; padding: 6px 10px 6px 9px; background: var(--c-black); color: var(--c-gold); border-radius: 12px; white-space: nowrap; filter: drop-shadow(0 6px 5px rgba(0,0,0,.35)); cursor: pointer; border: 1.5px solid rgba(207,185,145,.55); transition: background var(--d-fast), color var(--d-fast); }
 .pin-body::after { content: ""; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 7px solid transparent; border-top: 8px solid var(--c-black); border-bottom: 0; }
 .pin-body:hover, .pin-body:focus-visible, .pin.dev-current .pin-body { background: var(--c-gold); color: var(--c-black); outline: none; }
+.pin-body { animation: pinDrop .55s var(--e-spring) both, pinBob 4.2s ease-in-out infinite; animation-delay: calc(var(--i, 0) * 55ms), calc(var(--i, 0) * 55ms + 550ms); }
+@keyframes pinDrop {
+  from { opacity: 0; transform: translateX(-50%) rotateX(calc(var(--map-tilt) * -1)) scale(var(--pin-k, 1)) translateY(-22px); }
+  to   { opacity: 1; transform: translateX(-50%) rotateX(calc(var(--map-tilt) * -1)) scale(var(--pin-k, 1)) translateY(0); }
+}
+@keyframes pinBob {
+  0%, 100% { transform: translateX(-50%) rotateX(calc(var(--map-tilt) * -1)) scale(var(--pin-k, 1)) translateY(0); }
+  50%      { transform: translateX(-50%) rotateX(calc(var(--map-tilt) * -1)) scale(var(--pin-k, 1)) translateY(-3.5px); }
+}
+/* Hover wins over the idle bob. */
+.pin-body:hover, .pin-body:focus-visible { animation: none; transform: translateX(-50%) rotateX(calc(var(--map-tilt) * -1)) scale(calc(var(--pin-k, 1) * 1.12)) translateY(-5px); z-index: 3; }
+.map-img { opacity: 0; transition: opacity .5s ease; }
+.map-img.is-loaded { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .pin-body { animation: none; }
+  .pin-halo { animation: none; opacity: 0; }
+  .map-img { transition: none; opacity: 1; }
+}
 .pin-body:hover::after, .pin.dev-current .pin-body::after { border-top-color: var(--c-gold); }
 .pin-code { font-weight: 800; font-size: 12px; letter-spacing: .02em; }
 .pin-score { font-weight: 700; font-size: 11px; color: var(--c-white); display: inline-flex; align-items: center; gap: 2px; }
@@ -312,8 +367,9 @@ p { margin: 0; }
 </head>
 <body>
 <header class="topbar">
-  <a class="brand" href="#/map"><span class="brand-mark" id="brandMark">B</span><span class="brand-name" id="brandName">Boiler Bathrooms</span></a>
+  <a class="brand" href="#/home"><span class="brand-mark" id="brandMark">B</span><span class="brand-name" id="brandName">Boiler Bathrooms</span></a>
   <nav class="nav" id="nav">
+    <a href="#/home" data-route="home">Home</a>
     <a href="#/map" data-route="map">Map</a>
     <a href="#/leaderboard" data-route="leaderboard">Leaderboard</a>
     <a href="#/submit" data-route="submit">Submit</a>
@@ -342,22 +398,28 @@ const CONFIG = {
     appName: "Boiler Bathrooms",
     tagline: "Rate the thrones of Purdue.",
     emailDomain: "purdue.edu",
-    // Hosted campus map image, loaded at runtime (a Supabase Storage public URL works well).
-    mapImage: "https://YOUR-PROJECT-REF.supabase.co/storage/v1/object/public/bathroom-photos/purdue-campus-map.png",
-    mapTiltDeg: 14,
-    // x / y are percentages of the map image's natural width / height.
-    // They are rough placeholders — use DEV_PIN_MODE to correct them by clicking.
+    // Campus map image, loaded at runtime. Local file for now; a Supabase
+    // Storage public URL works the same way once this is hosted.
+    mapImage: "assets/campus-map.png",
+    // Generated by scripts/import_buildings.py from OpenStreetMap. Loaded at
+    // boot and merged over the curated list below, which stays the source of
+    // truth for floor plans.
+    buildingsUrl: "assets/buildings.json",
+    // Starting tilt of the map plane. The HUD slider adjusts it live from 0-55.
+    mapTiltDeg: 18,
+    // x / y are percentages of the map image's natural width / height,
+    // read off the official campus map. Use DEV_PIN_MODE to adjust by clicking.
     buildings: [
-      { code: "WALC", name: "Wilmeth Active Learning Center", x: 42, y: 38, floors: 5 },   // VERIFY floors
-      { code: "PMU",  name: "Purdue Memorial Union",          x: 55, y: 52, floors: 4 },   // Basement, Ground, First, Second
-      { code: "DSCB", name: "Hall of Data Science and AI",    x: 47, y: 33, floors: 4 },
-      { code: "PHYS", name: "Physics Building",               x: 44, y: 44, floors: 4 },   // VERIFY floors
-      { code: "CL50", name: "Class of 1950 Lecture Hall",     x: 58, y: 46, floors: 2 },   // VERIFY floors
-      { code: "BRNG", name: "Beering Hall of Liberal Arts and Education", x: 60, y: 44, floors: 7 }, // VERIFY floors
-      { code: "MATH", name: "Mathematical Sciences Building", x: 57, y: 41, floors: 9 },   // VERIFY floors
-      { code: "CHAS", name: "Chaney-Hale Hall of Science",    x: 45, y: 41, floors: 3 },   // VERIFY floors
-      { code: "HIKS", name: "Hicks Undergraduate Library",    x: 56, y: 49, floors: 2 },   // VERIFY floors
-      { code: "LWSN", name: "Lawson Computer Science Building", x: 40, y: 36, floors: 3 }  // VERIFY floors
+      { code: "WALC", name: "Wilmeth Active Learning Center", x: 73.7, y: 48.3, floors: 5 },   // VERIFY floors
+      { code: "PMU",  name: "Purdue Memorial Union",          x: 79.7, y: 56.4, floors: 4 },   // Basement, Ground, First, Second
+      { code: "DSCB", name: "Hall of Data Science and AI",    x: 68.1, y: 43.0, floors: 4 },
+      { code: "PHYS", name: "Physics Building",               x: 72.0, y: 38.6, floors: 4 },   // VERIFY floors
+      { code: "CL50", name: "Class of 1950 Lecture Hall",     x: 67.4, y: 52.0, floors: 2 },   // VERIFY floors
+      { code: "BRNG", name: "Beering Hall of Liberal Arts and Education", x: 63.6, y: 54.8, floors: 7 }, // VERIFY floors
+      { code: "MATH", name: "Mathematical Sciences Building", x: 65.3, y: 52.4, floors: 9 },   // VERIFY floors
+      { code: "CHAS", name: "Chaney-Hale Hall of Science",    x: 65.8, y: 44.0, floors: 3 },   // VERIFY floors
+      { code: "HIKS", name: "Hicks Undergraduate Library",    x: 73.3, y: 56.1, floors: 2 },   // VERIFY floors
+      { code: "LWSN", name: "Lawson Computer Science Building", x: 61.2, y: 46.8, floors: 3 }  // VERIFY floors
     ],
     // Known restroom layouts. Buildings not listed here get `defaultBathroomLabels`
     // on every floor. Used for the no-database demo mode; the SQL seed mirrors it.
@@ -425,6 +487,9 @@ const state = {
     minScale: 0.2, maxScale: 8,
     W: 0, H: 0,            // natural image size
     perspective: 1400,
+    tilt: 18,               // degrees; live value behind --map-tilt
+    detailScale: 1.6,       // zoom past this and every building gets a label
+    detail: false,
     imageStatus: "loading", // loading | ready | error
     fitted: false,
     pointers: new Map(),
@@ -508,7 +573,7 @@ async function fetchSchool(slug) {
 }
 
 async function fetchBuildings(schoolId) {
-  const { data, error } = await db.from("buildings").select("id,code,name").eq("school_id", schoolId).order("code");
+  const { data, error } = await db.from("buildings").select("id,code,name,x,y").eq("school_id", schoolId).order("code");
   if (error) throw error;
   return data;
 }
@@ -598,7 +663,8 @@ function mergeBuildingConfig(rows) {
   const byCode = Object.fromEntries(CONFIG.campus.buildings.map(b => [b.code.toUpperCase(), b]));
   return rows.map(r => {
     const cfg = byCode[r.code.toUpperCase()];
-    return { ...r, x: cfg ? cfg.x : null, y: cfg ? cfg.y : null };
+    // DB columns win; the CONFIG catalog is the fallback for rows that predate them.
+    return { ...r, x: r.x ?? (cfg ? cfg.x : null), y: r.y ?? (cfg ? cfg.y : null) };
   });
 }
 
@@ -629,6 +695,30 @@ function describeError(err) {
   if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) return "Couldn't reach the database. Check your connection and try again.";
   if (err && err.code === "42P01") return "Tables are missing. Paste the SQL migration into the Supabase SQL editor and run it.";
   return msg;
+}
+
+// Pulls the generated building catalog over the curated CONFIG list. Codes in
+// both keep their curated floor data; everything else arrives as a map pin with
+// no floors, which renders as a building with nothing rated in it yet.
+async function loadBuildingCatalog() {
+  const url = CONFIG.campus.buildingsUrl;
+  if (!url) return;
+  try {
+    const res = await fetch(url, { cache: "no-cache" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) throw new Error("empty catalog");
+    const curated = Object.fromEntries(CONFIG.campus.buildings.map(b => [b.code.toUpperCase(), b]));
+    CONFIG.campus.buildings = rows.map(r => {
+      const c = curated[r.code.toUpperCase()];
+      // Imported buildings arrive as pins only: no floors means no invented
+      // bathrooms. They gain rooms when someone actually submits one.
+      return { code: r.code, name: r.name, x: r.x, y: r.y, floors: c ? c.floors : 0 };
+    });
+  } catch (err) {
+    // Not fatal: fall back to the curated list baked into CONFIG.
+    console.warn("[campus] building catalog unavailable, using CONFIG list:", err.message);
+  }
 }
 
 async function loadCampus() {
@@ -724,11 +814,31 @@ function rankBathrooms(votes, bathrooms, period, m = CONFIG.BAYESIAN_M) {
   return entries.sort((a, b) => b.weighted - a.weighted || b.count - a.count || a.bathroom.label.localeCompare(b.bathroom.label));
 }
 
+// Same weighting as rankBathrooms, scored on a single criterion instead of the
+// overall average — this is what the home page's metric cards rank on.
+function rankByCriterion(votes, bathrooms, period, key, m = CONFIG.BAYESIAN_M) {
+  const inPeriod = votes.filter(v => v.period === period);
+  if (!inPeriod.length) return [];
+  const C = inPeriod.reduce((s, v) => s + Number(v[key]), 0) / inPeriod.length;
+  const byBathroom = new Map();
+  inPeriod.forEach(v => { (byBathroom.get(v.bathroom_id) || byBathroom.set(v.bathroom_id, []).get(v.bathroom_id)).push(v); });
+  const entries = [];
+  byBathroom.forEach((rows, bathroomId) => {
+    const bathroom = bathrooms.find(b => b.id === bathroomId);
+    if (!bathroom) return;
+    const count = rows.length;
+    const avg = rows.reduce((s, v) => s + Number(v[key]), 0) / count;
+    entries.push({ bathroom, count, avg, weighted: bayesianScore(avg, count, C, m) });
+  });
+  return entries.sort((a, b) => b.weighted - a.weighted || b.count - a.count || a.bathroom.label.localeCompare(b.bathroom.label));
+}
+
 /* =====================================================================
    ROUTER
    Hash routes so deep links and the back button work on static hosting.
    ===================================================================== */
 const ROUTES = [
+  { name: "home",        pattern: /^\/home\/?$/ },
   { name: "map",         pattern: /^\/map\/?$/ },
   { name: "building",    pattern: /^\/building\/([^/]+)\/?$/, keys: ["code"] },
   { name: "bathroom",    pattern: /^\/bathroom\/([^/]+)\/?$/, keys: ["id"] },
@@ -739,7 +849,7 @@ const ROUTES = [
 function parseRoute(hash) {
   let path = (hash || "").replace(/^#/, "");
   try { path = decodeURIComponent(path); } catch { /* leave as-is */ }
-  if (!path || path === "/") path = "/map";
+  if (!path || path === "/") path = "/home";
   for (const r of ROUTES) {
     const m = path.match(r.pattern);
     if (m) {
@@ -778,6 +888,7 @@ function render() {
   const { name, params } = state.route;
   if (name !== "map" && state.status === "error") return renderErrorView(root);
   switch (name) {
+    case "home":        return renderHomeView(root);
     case "map":         return renderMapView(root);
     case "building":    return renderBuildingView(root, params.code);
     case "bathroom":    return renderBathroomView(root, params.id);
@@ -833,10 +944,16 @@ function mapViewTemplate() {
     <div class="map-status" id="mapStatus" hidden></div>
     <div class="map-hud">
       <div class="map-hint" id="mapHint">Drag to pan · pinch or scroll to zoom · tap a pin</div>
+      <div class="map-tools">
       <div class="map-zoom" id="mapZoom">
         <button type="button" data-zoom="in" aria-label="Zoom in">+</button>
         <button type="button" data-zoom="out" aria-label="Zoom out">−</button>
         <button type="button" data-zoom="reset" aria-label="Reset view">⟲</button>
+      </div>
+      <div class="map-tiltctl" id="mapTiltCtl">
+        <label for="tiltRange" title="Tilt the map">⛰</label>
+        <input id="tiltRange" type="range" min="0" max="55" step="1" aria-label="Map tilt in degrees">
+      </div>
       </div>
     </div>
   </section>`;
@@ -853,6 +970,7 @@ function mountMap(view) {
   img.addEventListener("load", () => {
     if (!img.naturalWidth) return;
     m.W = img.naturalWidth; m.H = img.naturalHeight; m.imageStatus = "ready";
+    img.classList.add("is-loaded");
     view.querySelector("#mapPan").style.width = m.W + "px";
     view.querySelector("#mapPan").style.height = m.H + "px";
     computeMapBounds(viewport);
@@ -864,6 +982,9 @@ function mountMap(view) {
   if (img.complete && img.naturalWidth) img.dispatchEvent(new Event("load"));
 
   bindMapPointer(viewport);
+  const tilt = view.querySelector("#tiltRange");
+  tilt.value = state.map.tilt;
+  tilt.addEventListener("input", e => { setMapTilt(e.target.value); applyMapTransform(); });
   view.querySelector("#mapZoom").addEventListener("click", e => {
     const btn = e.target.closest("button"); if (!btn || m.imageStatus !== "ready") return;
     const rect = viewport.getBoundingClientRect();
@@ -890,6 +1011,7 @@ function syncMapOverlays(view) {
   if (m.imageStatus === "error") renderMapFallback(fallback);
   view.querySelector("#mapHint").hidden = m.imageStatus !== "ready";
   view.querySelector("#mapZoom").hidden = m.imageStatus !== "ready";
+  view.querySelector("#mapTiltCtl").hidden = m.imageStatus !== "ready";
 
   const status = view.querySelector("#mapStatus");
   status.className = "map-status";
@@ -917,12 +1039,48 @@ function buildingSummary(building) {
   return summarizeVotes(state.votes.filter(v => ids.has(v.bathroom_id)));
 }
 
+// Buildings that sit close together would render their labels on top of one
+// another at low zoom, so step the labels up in tiers and stem them back down
+// to their anchor dot. Purely visual — the anchor never moves.
+function assignPinTiers(pins) {
+  const NEAR_X = 6.5, NEAR_Y = 3, tiers = new Map();
+  // Work bottom-of-map upwards so the building that is further "back" always
+  // gets the taller stem. Tilt already pushes it up the screen, so the two
+  // offsets add instead of cancelling.
+  for (const b of [...pins].sort((a, c) => c.y - a.y)) {
+    let t = 0;
+    for (const [code, tier] of tiers) {
+      const other = pins.find(o => o.code === code);
+      if (Math.abs(other.x - b.x) < NEAR_X && Math.abs(other.y - b.y) < NEAR_Y) t = Math.max(t, tier + 1);
+    }
+    tiers.set(b.code, t);
+  }
+  return tiers;
+}
+
+// Campus has ~76 buildings but only a handful have rated bathrooms. Label the
+// ones worth tapping; everything else stays a dot until you zoom in far enough
+// to have room for it.
+function isMajorPin(b) {
+  return bathroomsInBuilding(b.id).length > 0;
+}
+
 function renderPins(container) {
-  container.innerHTML = state.buildings.filter(b => b.x != null && b.y != null).map(b => {
+  const placed = state.buildings.filter(b => b.x != null && b.y != null);
+  const detail = state.map.scale >= state.map.detailScale;
+  const labelled = placed.filter(b => detail || isMajorPin(b));
+  const tiers = assignPinTiers(labelled);
+  container.classList.toggle("is-detail", detail);
+  container.innerHTML = placed.map((b, i) => {
     const s = buildingSummary(b);
-    const score = s.avg == null ? `<span class="pin-score none">new</span>` : `<span class="pin-score">${fmtScore(s.avg)}<span aria-hidden="true">★</span></span>`;
-    return `<div class="pin" data-code="${esc(b.code)}" style="left:${b.x}%;top:${b.y}%">
-      <div class="pin-body" role="link" tabindex="0" aria-label="${esc(b.name)}, ${s.avg == null ? "no ratings yet" : "rated " + fmtScore(s.avg)}">
+    const rateable = isMajorPin(b);
+    const score = !rateable ? ""
+      : s.avg == null ? `<span class="pin-score none">new</span>`
+      : `<span class="pin-score">${fmtScore(s.avg)}<span aria-hidden="true">★</span></span>`;
+    const minor = !tiers.has(b.code);
+    return `<div class="pin ${minor ? "is-minor" : ""}" data-code="${esc(b.code)}" title="${esc(b.name)}" style="left:${b.x}%;top:${b.y}%;--i:${i % 14};--tier:${tiers.get(b.code) || 0}">
+      ${minor ? "" : `<span class="pin-halo" aria-hidden="true"></span><span class="pin-stem" aria-hidden="true"></span>`}
+      <div class="pin-body" role="link" tabindex="0" aria-label="${esc(b.name)}${!rateable ? "" : s.avg == null ? ", no ratings yet" : ", rated " + fmtScore(s.avg)}">
         <span class="pin-code">${esc(b.code)}</span>${score}<span class="pin-name">${esc(b.name)}</span>
       </div></div>`;
   }).join("");
@@ -944,7 +1102,11 @@ function fitMapToPins(viewport) {
   const m = state.map, rect = viewport.getBoundingClientRect();
   if (!m.W || !rect.width) return;
   const fit = Math.min(rect.width / m.W, rect.height / m.H);
-  const pins = state.buildings.filter(b => b.x != null && b.y != null);
+  // Frame the buildings that actually have something to rate. Fitting all ~76
+  // imported pins would zoom out to include the airport.
+  const placed = state.buildings.filter(b => b.x != null && b.y != null);
+  const major = placed.filter(isMajorPin);
+  const pins = major.length >= 2 ? major : placed;
   let scale = fit, cx = m.W / 2, cy = m.H / 2;
   if (pins.length >= 2) {
     const xs = pins.map(b => b.x / 100 * m.W), ys = pins.map(b => b.y / 100 * m.H);
@@ -959,6 +1121,11 @@ function fitMapToPins(viewport) {
   applyMapTransform();
 }
 
+function setMapTilt(deg) {
+  state.map.tilt = clamp(Number(deg) || 0, 0, 55);
+  document.documentElement.style.setProperty("--map-tilt", state.map.tilt + "deg");
+}
+
 function applyMapTransform() {
   const m = state.map, pan = document.getElementById("mapPan"), vp = document.getElementById("mapViewport");
   if (!pan || !vp) return;
@@ -969,6 +1136,12 @@ function applyMapTransform() {
   m.ty = clamp(m.ty, rect.height * 0.3 - m.H * m.scale, rect.height * 0.7);
   pan.style.transform = `translate(${m.tx}px, ${m.ty}px) scale(${m.scale})`;
   pan.style.setProperty("--pin-k", (1 / m.scale).toFixed(4));
+  const detail = m.scale >= m.detailScale;
+  if (detail !== m.detail) {
+    m.detail = detail;
+    const pins = document.getElementById("mapPins");
+    if (pins && state.status === "ready") renderPins(pins);
+  }
 }
 
 // Inverse of the CSS projection. The map plane is rotateX(θ) about the viewport
@@ -979,7 +1152,7 @@ function applyMapTransform() {
 // under any screen point — independent of the current pan/zoom, which are
 // applied *inside* the plane and undone separately in planeToImage().
 function screenToPlane(clientX, clientY, rect) {
-  const m = state.map, P = m.perspective, th = CONFIG.campus.mapTiltDeg * Math.PI / 180;
+  const m = state.map, P = m.perspective, th = m.tilt * Math.PI / 180;
   const sx = clientX - (rect.left + rect.width / 2);
   const sy = clientY - (rect.top + rect.height / 2);
   const dy = (sy * P) / (P * Math.cos(th) + sy * Math.sin(th));
@@ -1310,6 +1483,55 @@ function renderLeaderboardView(root) {
   </section>`;
 
   root.querySelector("#lbPeriod").addEventListener("change", e => { state.leaderboard.period = e.target.value; render(); });
+}
+
+/* ---------------------------------------------------------------- HOME */
+// The three metric cards. Change this list to feature different criteria.
+const HOME_METRICS = CONFIG.criteria.slice(0, 3).map(c => c.key);
+
+function renderHomeView(root) {
+  const period = currentPeriod();
+  const loading = state.status !== "ready";
+
+  const cards = HOME_METRICS.map((key, i) => {
+    const meta = CONFIG.criteria.find(c => c.key === key);
+    if (loading) return `<div class="card metric skel" style="--i:${i};height:150px"></div>`;
+    const top = rankByCriterion(state.votes, state.bathrooms, period, key)[0];
+    if (!top) {
+      return `<div class="card metric is-empty" style="--i:${i}">
+        <span class="metric-label">${esc(meta.label)}</span>
+        <span class="metric-none">No votes yet</span>
+        <span class="metric-hint">${esc(meta.hint)}</span>
+      </div>`;
+    }
+    const b = getBuilding(top.bathroom.building_id), f = getFloor(top.bathroom.floor_id);
+    return `<a class="card metric" href="#/bathroom/${esc(top.bathroom.id)}" style="--i:${i}">
+      <span class="metric-label">${esc(meta.label)}</span>
+      <span class="metric-score">${fmtScore(top.avg)}<span aria-hidden="true">★</span></span>
+      <span class="metric-name">${esc(top.bathroom.label)}</span>
+      <span class="metric-where">${esc(b ? b.code : "")} · ${esc(f ? f.name : "")} · ${top.count} vote${top.count === 1 ? "" : "s"}</span>
+    </a>`;
+  }).join("");
+
+  const votesThisMonth = state.votes.filter(v => v.period === period).length;
+
+  root.innerHTML = `
+  <section class="view home">
+    <header class="home-hero">
+      <p class="home-eyebrow">${esc(periodLabel(period))} · ${votesThisMonth} vote${votesThisMonth === 1 ? "" : "s"}</p>
+      <h1>${esc(CONFIG.campus.appName)}</h1>
+      <p class="sub">${esc(CONFIG.campus.tagline)}</p>
+    </header>
+
+    <h2 class="home-sect">Leading this month</h2>
+    <div class="metric-grid">${cards}</div>
+
+    <div class="home-cta">
+      <a class="btn btn-primary btn-lg" href="#/map">Vote now</a>
+      <p class="home-cta-sub">Pick a building on the map, then rate the bathroom you actually used.</p>
+      <p class="home-links"><a href="#/leaderboard">Full leaderboard</a> · <a href="#/submit">Submit a bathroom</a></p>
+    </div>
+  </section>`;
 }
 
 /* ---------------------------------------------------------------- SUBMIT */
@@ -1674,7 +1896,8 @@ async function copyText(text) {
    INIT
    ===================================================================== */
 function init() {
-  document.documentElement.style.setProperty("--map-tilt", CONFIG.campus.mapTiltDeg + "deg");
+  state.map.tilt = CONFIG.campus.mapTiltDeg;
+  setMapTilt(state.map.tilt);
   document.getElementById("brandName").textContent = CONFIG.campus.appName;
   document.getElementById("brandMark").textContent = CONFIG.campus.appName.slice(0, 1).toUpperCase();
   document.title = `${CONFIG.campus.appName} · ${CONFIG.SCHOOL_SLUG.replace(/^\w/, c => c.toUpperCase())}`;
@@ -1684,9 +1907,9 @@ function init() {
   window.addEventListener("offline", () => { state.online = false; renderBanners(); });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && state.modal) closeModal(); });
 
-  if (!location.hash) navigate("/map", { replace: true });
+  if (!location.hash) navigate("/home", { replace: true });
   state.route = parseRoute(location.hash);
-  loadCampus();
+  loadBuildingCatalog().then(loadCampus);
 }
 
 init();

@@ -1,0 +1,7 @@
+# Local secrets / config — never commit
+env.local
+.env
+.env.*
+
+# macOS
+.DS_Store
